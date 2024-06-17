@@ -20,8 +20,8 @@ functional paradigm.
 Syntactically, types will behave like any other kind of object, and it will be possible to
 parametrize them not only by other types (as one would do when creating a "generic" type, as has
 become standard in modern programming languages), but also by runtime values.  Indeed, phonk erodes
-the boundary between types to the point that a developer may be hesitant to think primarily in those
-terms: `type` is, itself, just another type an object can have.
+the boundary between types and values to the point that a developer may be hesitant to think
+primarily in those terms: `type` is, itself, just another type an object can have.
 
 For example, `List(elem type, len uint) type` will be a type constructor that takes a type
 representing the type of the list's elements, and a uint representing the number of elements in the
@@ -42,7 +42,8 @@ complex and time-consuming for a compiler, the language will support *proof anno
 a programmer to supply manual proofs that a value or type necessarily satisfies another type.
 
 - Paraconsistent: The Phonk interpro-compiler will support paraconsistency in type reasoning,
-enabling types to be fully first-class objects while avoiding certain paradoxes such as:
+enabling types to be fully first-class objects while avoiding (or rather, embracing) certain
+paradoxes such as:
 
     - Russell's paradox as applied to types; i.e., the language will be able to support a type of
     all types which do not instantiate themselves.  The answer to the question of whether this type
@@ -57,13 +58,13 @@ enabling types to be fully first-class objects while avoiding certain paradoxes 
 
 By 2550, Phonk is slated to support the following features:
 
-- Compiled and Bootstrapped: Once the core language features are present, the a compiler backend
+- Compiled and Bootstrapped: Once the core language features are present, a compiler backend
 will be written, thus transforming the interpro-compiler into, well, an actual compiler.  With a
 minimal compiler in place, written in Go as the current interpro-compiler is, an equivalent compiler
 will be written in Phonk and compiled, providing a self-compiling Phonk
 compiler that can be used to continue developing Phonk *in* Phonk.
 
-- Looser functionalism enforcement: The compiler will continue to encourage purely functional code
+- Looser functionalism enforcement: The language will continue to encourage purely functional code
 wherever possible, while allowing explicit violations of this principle where required.  Where
 side-effects are necessary, the language will encourage them to be hidden from user code and
 isolated to a single object or package.  Code that causes side-effects will be syntactically
