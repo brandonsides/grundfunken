@@ -6,9 +6,12 @@ all time by the year 2274.
 
 # Build and Install
 
-The Phonk interpro-compiler\* is currently written in Go
+The Phonk interpro-compiler\* is currently not distributed in binary form, so it will need to be
+compiled from source using the [Go compiler](https://go.dev/dl/), version 1.22 or higher.
 
- The 230-year roadmap for Phonk includes the following language features:
+# Roadmap
+
+The 230-year roadmap for Phonk includes the following language features:
 
 - purely functional: the Phonk language syntax will strictly require code to abide by the pure
 functional paradigm.
@@ -45,10 +48,12 @@ enabling types to be fully first-class objects while avoiding certain paradoxes 
     all types which do not instantiate themselves.  The answer to the question of whether this type
     instantiates itself will be, as far as the compiler is concerned, both yes *and* no.
 
-    - The Burali-Forti paradox; i.e., the language will be able to support a type `Ord` representing
-    ordinals, and a function `order(t type)` returning the order-type of the returned type; i.e. the
-    ordinal number of values the type can have.  `order(Ord)` will return a value, but the value
-    will necessarily be a contradictory object.
+    - The Burali-Forti paradox; i.e., the language will be able to support:
+        - a type `ordinal` representing ordinal numbers
+        - a function `order(s wellOrder) ordinal`, where wellOrder is a type representing a
+        [well-order](https://en.wikipedia.org/wiki/Well-order), which returns the ordinal
+        - a function `ordered(t type, cmp func(a t, b t) bool)` which returns a well-ordering of the
+        elements of a given type given 
 
 By 2550, Phonk is slated to support the following features:
 
