@@ -161,6 +161,13 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 
 	bindingExpressions := make([]BindingExpression, 0)
 	for len(rest) > 0 {
+		if rest[0].Type != tokens.IDENTIFIER {
+			return nil, rest, &models.InterpreterError{
+				Err:            errors.New("unexpected token"),
+				SourceLocation: rest[0].SourceLocation,
+			}
+		}
+
 		identifier := rest[0].Value
 
 		if rest[1].Type != tokens.EQUAL {
