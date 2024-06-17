@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/brandonksides/crazy-types/models"
-	"github.com/brandonksides/crazy-types/tokens"
+	"github.com/brandonksides/phonk/models"
+	"github.com/brandonksides/phonk/tokens"
 )
 
 func ParseExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {

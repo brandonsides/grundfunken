@@ -1,4 +1,4 @@
-module github.com/brandonksides/crazy-types
+module github.com/brandonksides/phonk
 
 go 1.21.1
 

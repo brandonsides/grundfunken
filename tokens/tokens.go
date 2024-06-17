@@ -3,7 +3,7 @@ package tokens
 import (
 	"fmt"
 
-	"github.com/brandonksides/crazy-types/models"
+	"github.com/brandonksides/phonk/models"
 )
 
 type TokenType int

@@ -8,9 +8,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/brandonksides/crazy-types/models"
-	"github.com/brandonksides/crazy-types/parser"
-	"github.com/brandonksides/crazy-types/tokens"
+	"github.com/brandonksides/phonk/models"
+	"github.com/brandonksides/phonk/parser"
+	"github.com/brandonksides/phonk/tokens"
 )
 
 type logger struct{}
@@ -54,7 +54,7 @@ func main() {
 		return
 	}
 
-	fmt.Printf("Result: %v", result)
+	fmt.Printf("Result: %v\n", result)
 }
 
 func interpret(lines []string) (any, *models.InterpreterError) {
