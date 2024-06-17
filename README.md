@@ -19,7 +19,7 @@ functional paradigm.
 - Dependently-typed: Phonk will support dependent types, allowing types to depend on runtime values.
 Syntactically, types will behave like any other kind of object, and it will be possible to
 parametrize them not only by other types (as one would do when creating a "generic" type, as has
-become standard in modern programming languages), but also by runtime values.  Indeed, phonk erodes
+become standard in modern programming languages), but also by runtime values.  Indeed, Phonk erodes
 the boundary between types and values to the point that a developer may be hesitant to think
 primarily in those terms: `type` is, itself, just another type an object can have.
 
