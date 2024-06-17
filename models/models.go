@@ -22,3 +22,8 @@ type Expression interface {
 	Evaluate(Bindings) (any, *InterpreterError)
 	SourceLocation() SourceLocation
 }
+
+type Function struct {
+	args []string
+	exp  Expression
+}
