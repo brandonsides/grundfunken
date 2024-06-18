@@ -121,6 +121,10 @@ func tokenizeLine(line string, lineNumber int) ([]Token, *models.InterpreterErro
 		if char == ' ' || char == '\t' {
 			col++
 			continue
+		} else if char == '/' {
+			if col+1 < len(line) && line[col+1] == '/' {
+				break
+			}
 		} else if tokType, ok := tokMap[string(char)]; ok {
 			toks = append(toks, Token{
 				Type:  tokType,

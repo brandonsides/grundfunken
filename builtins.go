@@ -139,7 +139,7 @@ var builtins = map[string]any{
 			return args[0] == args[1], nil
 		},
 	},
-	"cons": &BuiltinFunction{
+	"prepend": &BuiltinFunction{
 		Argc: 2,
 		Fn: func(args []any) (any, *models.InterpreterError) {
 			list := args[1].([]any)
