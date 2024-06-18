@@ -44,6 +44,10 @@ func (le *LetExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		}
 
 		newBindings[k] = val
+
+		if funcVal, ok := val.(*models.ExpFunction); ok {
+			funcVal.Bindings[k] = val
+		}
 	}
 
 	return le.Expression2.Evaluate(newBindings)
@@ -88,8 +92,16 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 			}
 		}
 
+		rest = rest[1:]
+
+		if len(rest) == 0 {
+			return nil, rest, &models.InterpreterError{
+				Err: errors.New("unexpected end of input"),
+			}
+		}
+
 		var exp1 models.Expression
-		exp1, rest, err = ParseExpression(rest[2:])
+		exp1, rest, err = ParseExpression(rest[0:])
 		if err != nil {
 			return nil, rest, err
 		}
@@ -332,9 +344,14 @@ type FunctionExpression struct {
 }
 
 func (fe *FunctionExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
-	return &models.Function{
+	retBindings := make(models.Bindings)
+	for k, v := range bindings {
+		retBindings[k] = v
+	}
+
+	return &models.ExpFunction{
 		Args:     fe.args,
-		Bindings: bindings,
+		Bindings: retBindings,
 		Exp:      fe.exp,
 	}, nil
 }
@@ -411,7 +428,10 @@ func parseFunction(toks []tokens.Token) (exp models.Expression, rest []tokens.To
 
 	rest = rest[1:]
 
-	exp, rest, err = ParseExpression(rest[1:])
+	exp, rest, err = ParseExpression(rest)
+	if err != nil {
+		return nil, rest, err
+	}
 
 	return &FunctionExpression{
 		args: args,
@@ -625,6 +645,7 @@ func (ie *IdentifierExpression) SourceLocation() models.SourceLocation {
 	return ie.loc
 }
 
+/*
 func parseIdentifierExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
 	if len(toks) == 0 {
 		return nil, toks, &models.InterpreterError{
@@ -646,6 +667,7 @@ func parseIdentifierExpression(toks []tokens.Token) (exp models.Expression, rest
 		loc:  toks[0].SourceLocation,
 	}, rest, nil
 }
+*/
 
 type ArrayLiteralExpression struct {
 	val []models.Expression
@@ -704,6 +726,43 @@ func parseArrayLiteral(toks []tokens.Token) (exp models.Expression, rest []token
 	return exp, rest, nil
 }
 
+type FunctionCallExpression struct {
+	Function models.Expression
+	Args     []models.Expression
+	loc      models.SourceLocation
+}
+
+func (fce *FunctionCallExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+	f, err := fce.Function.Evaluate(bindings)
+	if err != nil {
+		return nil, err
+	}
+
+	fun, ok := f.(models.Function)
+	if !ok {
+		return nil, &models.InterpreterError{
+			Err:            errors.New("cannot call non-function"),
+			SourceLocation: fce.Function.SourceLocation(),
+		}
+	}
+
+	argArray := make([]any, len(fce.Args))
+	for i, arg := range fce.Args {
+		val, err := arg.Evaluate(bindings)
+		if err != nil {
+			return nil, err
+		}
+
+		argArray[i] = val
+	}
+
+	return fun.Call(argArray)
+}
+
+func (fce *FunctionCallExpression) SourceLocation() models.SourceLocation {
+	return fce.loc
+}
+
 func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
 	if len(toks) == 0 {
 		return nil, toks, &models.InterpreterError{
@@ -732,8 +791,31 @@ func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Toke
 			}
 		}
 		rest = rest[1:]
-	case tokens.NUMBER:
-		ret, innerErr := strconv.Atoi(toks[0].Value)
+	case tokens.NUMBER, tokens.MINUS:
+		var numStr string
+		rest = toks
+		if toks[0].Type == tokens.MINUS {
+			rest = toks[1:]
+			if len(rest) == 0 {
+				return nil, rest, &models.InterpreterError{
+					Err: errors.New("unexpected end of input"),
+				}
+			}
+
+			numStr = "-"
+		}
+
+		if rest[0].Type != tokens.NUMBER {
+			return nil, rest, &models.InterpreterError{
+				Err:            errors.New("unexpected token"),
+				SourceLocation: rest[0].SourceLocation,
+			}
+		}
+
+		numStr += rest[0].Value
+		rest = rest[1:]
+
+		ret, innerErr := strconv.Atoi(numStr)
 		if innerErr != nil {
 			return nil, toks[1:], &models.InterpreterError{
 				Err:            fmt.Errorf("failed to parse number literal: %w", innerErr),
@@ -741,10 +823,10 @@ func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Toke
 			}
 		}
 
-		exp, rest, err = &LiteralExpression{
+		exp = &LiteralExpression{
 			val: ret,
 			loc: toks[0].SourceLocation,
-		}, toks[1:], nil
+		}
 	case tokens.IDENTIFIER:
 		if toks[0].Value == "true" {
 			exp, rest, err = &LiteralExpression{
@@ -774,10 +856,7 @@ func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Toke
 	case tokens.IF:
 		exp, rest, err = parseIfExpression(toks)
 	default:
-		exp, rest, err = nil, toks, &models.InterpreterError{
-			Err:            errors.New("unexpected token"),
-			SourceLocation: toks[0].SourceLocation,
-		}
+		return nil, toks, nil
 	}
 	if err != nil {
 		return nil, rest, err
@@ -787,33 +866,50 @@ func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Toke
 		return exp, rest, nil
 	}
 
-	if rest[0].Type == tokens.FOR {
-		exp, rest, err = parseForExpression(exp, rest)
-	} else if rest[0].Type == tokens.LEFT_PAREN {
-		rest = toks[1:]
+	if rest[0].Type == tokens.LEFT_PAREN {
+		rest = rest[1:]
 
-		exps, rest, err := parseExpressions(rest)
+		var exps []models.Expression
+		exps, rest, err = parseExpressions(rest)
 		if err != nil {
 			return nil, rest, err
 		}
-		if rest[0].Type != tokens.RIGHT_SQUARE_BRACKET {
+		if rest[0].Type != tokens.RIGHT_PAREN {
 			return nil, rest, &models.InterpreterError{
 				Err:            errors.New("unexpected token"),
 				SourceLocation: rest[0].SourceLocation,
 			}
 		}
 		rest = rest[1:]
-		exp = &ArrayLiteralExpression{
-			val: exps,
-			loc: toks[0].SourceLocation,
+		exp = &FunctionCallExpression{
+			Function: exp,
+			Args:     exps,
+			loc: models.SourceLocation{
+				LineNumber:   exp.SourceLocation().LineNumber,
+				ColumnNumber: exp.SourceLocation().ColumnNumber,
+			},
 		}
 	}
-	return exp, rest, nil
+
+	if len(rest) == 0 {
+		return exp, rest, nil
+	}
+
+	if rest[0].Type == tokens.FOR {
+		exp, rest, err = parseForExpression(exp, rest)
+	}
+
+	return exp, rest, err
 }
 
 func parseExpressions(toks []tokens.Token) (exps []models.Expression, rest []tokens.Token, err *models.InterpreterError) {
 	exps = make([]models.Expression, 0)
-	for exp, rest, err := ParseExpression(toks); err == nil; exp, rest, err = ParseExpression(rest) {
+	var exp models.Expression
+	for exp, rest, err = ParseExpression(toks); err == nil; exp, rest, err = ParseExpression(rest) {
+		if exp == nil {
+			return exps, rest, nil
+		}
+
 		exps = append(exps, exp)
 		if len(rest) == 0 {
 			return nil, rest, &models.InterpreterError{

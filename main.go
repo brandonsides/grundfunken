@@ -75,7 +75,7 @@ func interpret(lines []string) (any, *models.InterpreterError) {
 		}
 	}
 
-	return expression.Evaluate(models.Bindings{})
+	return expression.Evaluate(builtins)
 }
 
 func report(err models.InterpreterError, lines []string) {
