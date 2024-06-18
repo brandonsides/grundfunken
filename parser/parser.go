@@ -21,7 +21,6 @@ func ParseExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.
 
 type BindingExpression struct {
 	Identifier string
-	Args       []string
 	Expression models.Expression
 }
 
@@ -82,35 +81,10 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 		identifier := rest[0].Value
 		rest = rest[1:]
 
-		var args []string
-		if rest[0].Type == tokens.LEFT_PAREN {
-			for {
-				rest := rest[1:]
-				if rest[0].Type != tokens.IDENTIFIER {
-					return nil, rest, &models.InterpreterError{
-						Err:            errors.New("unexpected token"),
-						SourceLocation: rest[0].SourceLocation,
-					}
-				}
-
-				rest = rest[1:]
-				if rest[0].Type != tokens.COMMA {
-					break
-				}
-				rest = rest[1:]
-			}
-			if rest[0].Type != tokens.RIGHT_PAREN {
-				return nil, rest, &models.InterpreterError{
-					Err:            errors.New("unexpected token"),
-					SourceLocation: rest[0].SourceLocation,
-				}
-			}
-		}
-
-		if rest[1].Type != tokens.EQUAL {
+		if rest[0].Type != tokens.EQUAL {
 			return nil, rest, &models.InterpreterError{
 				Err:            errors.New("unexpected token"),
-				SourceLocation: rest[1].SourceLocation,
+				SourceLocation: rest[0].SourceLocation,
 			}
 		}
 
@@ -122,7 +96,6 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 
 		bindingExpressions = append(bindingExpressions, BindingExpression{
 			Identifier: identifier,
-			Args:       args,
 			Expression: exp1,
 		})
 
@@ -353,6 +326,99 @@ func parseForExpression(exp1 models.Expression, toks []tokens.Token) (exp models
 	}, rest, nil
 }
 
+type FunctionExpression struct {
+	args []string
+	exp  models.Expression
+}
+
+func (fe *FunctionExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+	return &models.Function{
+		Args:     fe.args,
+		Bindings: bindings,
+		Exp:      fe.exp,
+	}, nil
+}
+
+func (fe *FunctionExpression) SourceLocation() models.SourceLocation {
+	return fe.exp.SourceLocation()
+}
+
+func parseFunction(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
+	if len(toks) == 0 {
+		return nil, toks, &models.InterpreterError{
+			Err: errors.New("unexpected end of input"),
+		}
+	}
+
+	if toks[0].Type != tokens.FUNC {
+		return nil, toks, &models.InterpreterError{
+			Err:            errors.New("unexpected token"),
+			SourceLocation: toks[0].SourceLocation,
+		}
+	}
+
+	rest = toks[1:]
+	if len(rest) == 0 {
+		return nil, rest, &models.InterpreterError{
+			Err: errors.New("unexpected end of input"),
+		}
+	}
+
+	if rest[0].Type != tokens.LEFT_PAREN {
+		return nil, rest, &models.InterpreterError{
+			Err:            errors.New("unexpected token"),
+			SourceLocation: rest[0].SourceLocation,
+		}
+	}
+
+	rest = rest[1:]
+	args := make([]string, 0)
+	for len(rest) > 0 {
+		if rest[0].Type != tokens.IDENTIFIER {
+			return nil, rest, &models.InterpreterError{
+				Err:            errors.New("unexpected token"),
+				SourceLocation: rest[0].SourceLocation,
+			}
+		}
+
+		args = append(args, rest[0].Value)
+		rest = rest[1:]
+		if len(rest) == 0 {
+			return nil, rest, &models.InterpreterError{
+				Err: errors.New("unexpected end of input"),
+			}
+		}
+
+		if rest[0].Type == tokens.RIGHT_PAREN {
+			break
+		}
+
+		if rest[0].Type != tokens.COMMA {
+			return nil, rest, &models.InterpreterError{
+				Err:            errors.New("unexpected token"),
+				SourceLocation: rest[0].SourceLocation,
+			}
+		}
+
+		rest = rest[1:]
+	}
+
+	if len(rest) == 0 {
+		return nil, rest, &models.InterpreterError{
+			Err: errors.New("unexpected end of input"),
+		}
+	}
+
+	rest = rest[1:]
+
+	exp, rest, err = ParseExpression(rest[1:])
+
+	return &FunctionExpression{
+		args: args,
+		exp:  exp,
+	}, rest, nil
+}
+
 type AddExpression struct {
 	op     tokens.Token
 	first  models.Expression
@@ -540,7 +606,6 @@ func (le *LiteralExpression) SourceLocation() models.SourceLocation {
 
 type IdentifierExpression struct {
 	name string
-	args []models.Expression
 	loc  models.SourceLocation
 }
 
@@ -550,22 +615,6 @@ func (ie *IdentifierExpression) Evaluate(bindings models.Bindings) (any, *models
 		return nil, &models.InterpreterError{
 			Err:            errors.New("cannot evaluate unbound identifier"),
 			SourceLocation: ie.loc,
-		}
-	}
-
-	if len(ie.args) > 0 {
-		expToEval, ok := ret.(models.Expression)
-		if !ok {
-			return nil, &models.InterpreterError{
-				Err:            errors.New("cannot call non-function"),
-				SourceLocation: ie.loc,
-			}
-		}
-
-		newBindings := make(models.Bindings)
-		for bindingIdx, binding := range 
-		for i, argBinding := range args {
-
 		}
 	}
 
@@ -592,58 +641,8 @@ func parseIdentifierExpression(toks []tokens.Token) (exp models.Expression, rest
 	id := toks[0].Value
 	rest = toks[1:]
 
-	if len(rest) == 0 || rest[0].Type != tokens.LEFT_PAREN {
-		return &IdentifierExpression{
-			name: id,
-			loc:  toks[0].SourceLocation,
-		}, rest, nil
-	}
-	rest = rest[1:]
-
-	var args []models.Expression
-	if rest[0].Type == tokens.LEFT_PAREN {
-		rest = rest[1:]
-		for len(rest) > 0 {
-			if rest[0].Type == tokens.RIGHT_PAREN {
-				break
-			}
-
-			var arg models.Expression
-			arg, rest, err = ParseExpression(rest)
-			if err != nil {
-				return nil, rest, err
-			}
-
-			args = append(args, arg)
-			if len(rest) == 0 {
-				return nil, rest, &models.InterpreterError{
-					Err: errors.New("unexpected end of input"),
-				}
-			}
-
-			if rest[0].Type == tokens.COMMA {
-				rest = rest[1:]
-			} else if rest[0].Type != tokens.RIGHT_PAREN {
-				return nil, rest, &models.InterpreterError{
-					Err:            errors.New("unexpected token"),
-					SourceLocation: rest[0].SourceLocation,
-				}
-			}
-		}
-	}
-
-	if len(rest) == 0 || rest[0].Type != tokens.RIGHT_PAREN {
-		return nil, rest, &models.InterpreterError{
-			Err:            errors.New("unexpected token"),
-			SourceLocation: rest[0].SourceLocation,
-		}
-	}
-
-	rest = rest[1:]
-
 	return &IdentifierExpression{
 		name: id,
-		args: args,
 		loc:  toks[0].SourceLocation,
 	}, rest, nil
 }
@@ -686,20 +685,7 @@ func parseArrayLiteral(toks []tokens.Token) (exp models.Expression, rest []token
 	}
 
 	rest = toks[1:]
-	exps := make([]models.Expression, 0)
-	for exp, rest, err = ParseExpression(rest); err == nil; exp, rest, err = ParseExpression(rest) {
-		exps = append(exps, exp)
-		if len(rest) == 0 {
-			return nil, rest, &models.InterpreterError{
-				Err: errors.New("unexpected end of input"),
-			}
-		}
-
-		if rest[0].Type != tokens.COMMA {
-			break
-		}
-		rest = rest[1:]
-	}
+	exps, rest, err := parseExpressions(rest)
 	if err != nil {
 		return nil, rest, err
 	}
@@ -726,6 +712,8 @@ func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Toke
 	}
 
 	switch toks[0].Type {
+	case tokens.FUNC:
+		exp, rest, err = parseFunction(toks)
 	case tokens.LEFT_PAREN:
 		rest = toks[1:]
 		exp, rest, err = ParseExpression(rest)
@@ -800,8 +788,46 @@ func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Toke
 	}
 
 	if rest[0].Type == tokens.FOR {
-		return parseForExpression(exp, rest)
-	}
+		exp, rest, err = parseForExpression(exp, rest)
+	} else if rest[0].Type == tokens.LEFT_PAREN {
+		rest = toks[1:]
 
+		exps, rest, err := parseExpressions(rest)
+		if err != nil {
+			return nil, rest, err
+		}
+		if rest[0].Type != tokens.RIGHT_SQUARE_BRACKET {
+			return nil, rest, &models.InterpreterError{
+				Err:            errors.New("unexpected token"),
+				SourceLocation: rest[0].SourceLocation,
+			}
+		}
+		rest = rest[1:]
+		exp = &ArrayLiteralExpression{
+			val: exps,
+			loc: toks[0].SourceLocation,
+		}
+	}
 	return exp, rest, nil
+}
+
+func parseExpressions(toks []tokens.Token) (exps []models.Expression, rest []tokens.Token, err *models.InterpreterError) {
+	exps = make([]models.Expression, 0)
+	for exp, rest, err := ParseExpression(toks); err == nil; exp, rest, err = ParseExpression(rest) {
+		exps = append(exps, exp)
+		if len(rest) == 0 {
+			return nil, rest, &models.InterpreterError{
+				Err: errors.New("unexpected end of input"),
+			}
+		}
+
+		if rest[0].Type != tokens.COMMA {
+			break
+		}
+		rest = rest[1:]
+	}
+	if err != nil {
+		return nil, rest, err
+	}
+	return exps, rest, nil
 }

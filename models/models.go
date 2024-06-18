@@ -24,6 +24,7 @@ type Expression interface {
 }
 
 type Function struct {
-	args []string
-	exp  Expression
+	Args     []string
+	Bindings Bindings
+	Exp      Expression
 }
