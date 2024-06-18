@@ -156,6 +156,12 @@ var builtins = map[string]any{
 					SourceLocation: models.SourceLocation{},
 				}
 			}
+
+			// short circuit
+			if v1 {
+				return true, nil
+			}
+
 			v2, ok := args[1].(bool)
 			if !ok {
 				return nil, &models.InterpreterError{
@@ -163,7 +169,7 @@ var builtins = map[string]any{
 					SourceLocation: models.SourceLocation{},
 				}
 			}
-			return v1 || v2, nil
+			return v2, nil
 		},
 	},
 	"and": &BuiltinFunction{
@@ -176,6 +182,12 @@ var builtins = map[string]any{
 					SourceLocation: models.SourceLocation{},
 				}
 			}
+
+			// short circuit
+			if !v1 {
+				return false, nil
+			}
+
 			v2, ok := args[1].(bool)
 			if !ok {
 				return nil, &models.InterpreterError{
@@ -183,7 +195,7 @@ var builtins = map[string]any{
 					SourceLocation: models.SourceLocation{},
 				}
 			}
-			return v1 && v2, nil
+			return v2, nil
 		},
 	},
 	"not": &BuiltinFunction{
