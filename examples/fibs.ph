@@ -1,8 +1,12 @@
 let
     // functions
+
+    // takes a list and returns everything after the first element
     tail = func(l)
         slice(l, 1, -1),
 
+    // takes a function and a list and returns
+    // true if all elements in the list satisfy the function
     all = func(f, l)
         if equals(len(l), 0) then
             true
@@ -13,6 +17,11 @@ let
                 else
                     false,
 
+    // takes a function and a list and returns a list
+    // containing all the elements of the given list up to
+    // the first element that does not satisfy the function
+    // unlike filter, takeWhile stops at the first element
+    // that does not satisfy the function
     takeWhile = func(f, l)
         if equals(len(l), 0) then
             []
@@ -23,6 +32,7 @@ let
                 else
                     [],
 
+    // takes a number and returns true if it is prime
     isPrime = func(n)
         if lessThan(n, 2) then
             false
@@ -36,6 +46,11 @@ let
             )
         ),
 
+    // takes a function and a list and returns a list
+    // containing all the elements of the given list that
+    // satisfy the function
+    // unlike takeWhile, filter does not stop at the
+    // first element that does not satisfy the function
     filter = func(f, l)
         if equals(len(l), 0) then
             []
@@ -49,19 +64,22 @@ let
                 else
                     rest,
 
+    // helper function for fib
     fibHelper = func(n, a, b)
         if equals(n, 0) then
             a
         else
             fibHelper(n - 1, b, a + b),
 
+    // takes a number n returns the nth Fibonacci number
     fib = func(n) fibHelper(n, 1, 1),
 
-    fibUpTo = func(lim) fib(x) for x in range(0, lim)
+    // takes a number n and returns a list of the first n Fibonacci numbers
+    firstNFibs = func(n) fib(x) for x in range(0, n)
 in let
     // variables
     lim = 30,
-    fibs = fibUpTo(lim)
+    fibs = firstNFibs(lim)
 in [
         "fibs:", fibs,
         "prime fibs:", filter(isPrime, fibs)
