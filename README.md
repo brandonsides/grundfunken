@@ -61,8 +61,8 @@ By 2550, Phonk is slated to support the following features:
 - Compiled and Bootstrapped: Once the core language features are present, a compiler backend
 will be written, thus transforming the interpro-compiler into, well, an actual compiler.  With a
 minimal compiler in place, written in Go as the current interpro-compiler is, an equivalent compiler
-will be written in Phonk and compiled, providing a self-compiling Phonk
-compiler that can be used to continue developing Phonk *in* Phonk.
+will be written in Phonk and compiled, providing a self-compiling Phonk compiler that can be used to
+continue developing Phonk *in* Phonk.
 
 - Looser functionalism enforcement: The language will continue to encourage purely functional code
 wherever possible, while allowing explicit violations of this principle where required.  Where
