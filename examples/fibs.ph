@@ -32,6 +32,8 @@ let
                 else
                     [],
 
+    isFactor = func(n, x) equals(0, mod(n, x)),
+
     // takes a number and returns true if it is prime
     isPrime = func(n)
         if lessThan(n, 2) then
@@ -39,7 +41,7 @@ let
         else if equals(n, 2) then
             true
         else all(
-            func(x) not(equals(0, mod(n, x))),
+            func(x) not(isFactor(n, x)),
             takeWhile(
                 func(x) not(greaterThan(x * x, n)),
                 range(2, n - 1)
