@@ -54,7 +54,7 @@ paradoxes such as:
         - a function `order(s wellOrder) ordinal`, where wellOrder is a type representing a
         [well-order](https://en.wikipedia.org/wiki/Well-order), which returns the ordinal
         - a function `ordered(t type, cmp func(a t, b t) bool)` which returns a well-ordering of the
-        elements of a given type given 
+        elements of a given type, given a comparison function over elements of that type.
 
 By 2550, Phonk is slated to support the following features:
 
@@ -80,5 +80,5 @@ will be available to code that manipulates state.  Code that is marked as state-
 have the ability to more directly manage concurrency, allowing optimization where the language's
 native concurrency features are insufficient.
 
-^\* an *interpro-compiler* is a technical industry term for a interpreter that will
+^* an *interpro-compiler* is a technical industry term for a interpreter that will
 hopefully one day be a compiler
