@@ -12,10 +12,10 @@ let
             true
         else
             let this = at(l, 0) in
-                if f(this) then
+                and(
+                    f(this),
                     all(f, tail(l))
-                else
-                    false,
+                ),
 
     // takes a function and a list and returns a list
     // containing all the elements of the given list up to
