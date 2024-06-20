@@ -73,16 +73,20 @@ let
         else
             fibHelper(n - 1, b, a + b),
 
-    // takes a number n returns the nth Fibonacci number
+    // takes a number n and returns the nth Fibonacci number
     fib = func(n) fibHelper(n, 1, 1),
 
     // takes a number n and returns a list of the first n Fibonacci numbers
     firstNFibs = func(n) fib(x) for x in range(0, n)
 in let
     // variables
-    lim = 30,
-    fibs = firstNFibs(lim)
+    lim = parseInt(input("Enter a limit: "))
+in if lessThan(lim, 0) then
+    "Limit must be non-negative"
+else if greaterThan(lim, 40) then
+    "Limit must be less than or equal to 40"
+else let fibs = firstNFibs(lim)
 in [
-        "fibs:", fibs,
-        "prime fibs:", filter(isPrime, fibs)
+        "\n", "fibs:", fibs, "\n",
+        "prime fibs:", filter(isPrime, fibs), "\n"
 ]

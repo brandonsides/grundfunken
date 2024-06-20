@@ -1,1 +1,1 @@
-let a = 8, b = 10 in c + b
+let a = 8, b = 10 in a + b

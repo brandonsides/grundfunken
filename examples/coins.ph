@@ -37,7 +37,7 @@ let
                 [restMinIdx+1, restMinVal],
 
     // all possible coin values (in pence)
-    coinVals = [1, 2, 5, 10, 20, 50, 100, 200],
+    coinVals = [1, 2, 5, 10, 20, 25, 50, 100, 200],
 
     // recursive helper function to make change
     makeChangeHelper = func(trg, cur, prevBests)
@@ -70,6 +70,19 @@ let
         if equals(n, 0) then
             []
         else
-            makeChangeHelper(n, 1, [[]])
+            makeChangeHelper(n, 1, [[]]),
+    
+    makeChangeGreedy = func(n)
+        if equals(n, 0) then
+            []
+        else
+            let
+                coinVal = filter(coinVals, func(coinVal) not(greaterThan(coinVal, n))),
+                rest = makeChangeGreedy(n - at(coinVal, len(coinVal)-1))
+            in
+                prepend(at(coinVal, len(coinVal)-1), rest),
+    
+    valStr = input("Enter a value in pence: "),
+    val = parseInt(valStr)
 in
-    ["\n", i, makeChange(i), "\n"] for i in range(0, 500)
+    ["\n\tgreedy:", makeChangeGreedy(val), "\n\toptimal:", makeChange(val), "\n"]

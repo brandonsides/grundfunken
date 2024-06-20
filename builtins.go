@@ -310,4 +310,28 @@ var builtins = map[string]any{
 			return str[start:end], nil
 		},
 	},
+	"input": &BuiltinFunction{
+		Argc: 1,
+		Fn: func(args []any) (any, *models.InterpreterError) {
+			fmt.Print(args[0])
+			var input string
+			fmt.Scanln(&input)
+			return input, nil
+		},
+	},
+	"parseInt": &BuiltinFunction{
+		Argc: 1,
+		Fn: func(args []any) (any, *models.InterpreterError) {
+			str := args[0].(string)
+			var num int
+			_, err := fmt.Sscanf(str, "%d", &num)
+			if err != nil {
+				return nil, &models.InterpreterError{
+					Err:            fmt.Errorf("could not parse int from string"),
+					SourceLocation: models.SourceLocation{},
+				}
+			}
+			return num, nil
+		},
+	},
 }
