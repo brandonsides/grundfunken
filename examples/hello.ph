@@ -1,0 +1,1 @@
+let hello = "hello ", world = "world!" in concatStr(hello, world)

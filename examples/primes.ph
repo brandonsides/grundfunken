@@ -19,7 +19,7 @@ takeWhile = func(f, l)
     else
         let this = at(l, 0) in
             if f(this) then
-                cons(this, takeWhile(f, tail(l)))
+                prepend(this, takeWhile(f, tail(l)))
             else
                 [],
 
@@ -35,19 +35,6 @@ isPrime = func(n)
             range(2, n - 1)
         )
     ),
-
-filter = func(f, l)
-    if equals(len(l), 0) then
-        []
-    else
-        let
-            this = at(l, 0),
-            rest = filter(f, tail(l))
-        in
-            if f(this) then
-                cons(this, rest)
-            else
-                rest,
 
 lim = 1000
 
