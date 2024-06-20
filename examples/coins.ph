@@ -3,6 +3,7 @@ let
     tail = func(l)
         slice(l, 1, -1),
 
+    // takes a list and returns all elements that meet the given condition
     filter = func(l, f)
         if equals(len(l), 0) then
             []
@@ -16,68 +17,59 @@ let
                 else
                     rest,
 
+    // returns the least element in a list
     min = func(l)
-        if len(l) == 0 then
-            [false, 0]
+        if equals(len(l), 0) then
+            [-1, 0]
         else
             let
                 first = at(l, 0),
-                rest = tail(l)
+                rest = tail(l),
                 restMin = min(rest),
-                restHasMin = at(restMin, 0),
+                restMinIdx = at(restMin, 0),
                 restMinVal = at(restMin, 1)
             in if or(
-                not(restHasMin),
+                equals(restMinIdx, -1),
                 lessThan(first, restMinVal)
             ) then
-                [true, first]
+                [0, first]
             else
-                restMinVal,
+                [restMinIdx+1, restMinVal],
 
+    // all possible coin values (in pence)
     coinVals = [1, 2, 5, 10, 20, 50, 100, 200],
 
+    // recursive helper function to make change
     makeChangeHelper = func(trg, cur, prevBests)
-        let curBest = min(
-            (at(prevWays, cur - coinVal) + 1) for coinVal in filter(
-                coinVals, func(coinVal) not(greaterThan(coinVal, cur))
-            )
-        ) in
-            if equals(cur, trg) then
-                curWays
-            else
-                makeChangeHelper(trg, cur + 1, append(prevWays, curWays)),
+        let
+            bestWithEachCoinValAsLast = append(
+                at(prevBests, cur - coinVal),
+                coinVal
+            ) for coinVal in filter(
+                coinVals,
+                func(coinVal) not(greaterThan(coinVal, cur))
+            ),
 
+            curBestIdxAndVal = min(
+                len(coinSeq) for coinSeq in bestWithEachCoinValAsLast
+            ),
+            curBestIdx = at(curBestIdxAndVal, 0),
+
+            curBestVal = if lessThan(curBestIdx, 0)
+                then []
+            else
+                at(bestWithEachCoinValAsLast, curBestIdx)
+        in
+            if equals(cur, trg) then
+                curBestVal
+            else
+                makeChangeHelper(trg, cur + 1, append(prevBests, curBestVal)),
+
+    // wrapper function to make change
     makeChange = func(n)
         if equals(n, 0) then
             []
         else
             makeChangeHelper(n, 1, [[]])
 in
-    makeChange(i) for i in range(0, 20)
-
-//
-
-// 1
-
-// 1 1
-// 2
-
-// 1 1 1
-// 2 1
-// 1 2 <-- wrong
-
-// 1 1 1 1
-// 2 1 1
-// 1 2 1 <-- wrong
-// 1 1 2 <-- wrong
-// 2 2
-
-// 1 1 1 1 1
-// 2 1 1 1
-// 1 1 1 2 <-- wrong
-// 2 2 1
-// 1 2 2 <-- wrong
-// 2 1 2 <-- wrong
-// 5
-
-// 1 1 1 1 1 1
+    ["\n", i, makeChange(i), "\n"] for i in range(0, 500)

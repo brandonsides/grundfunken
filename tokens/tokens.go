@@ -28,7 +28,7 @@ const (
 	LEFT_ANGLE_BRACKET
 	RIGHT_ANGLE_BRACKET
 
-	// Literals
+	// Values
 	IDENTIFIER
 	STRING
 	NUMBER
@@ -202,12 +202,36 @@ func tokenizeLine(line string, lineNumber int) ([]Token, *models.InterpreterErro
 
 func tokenizeString(line string) (Token, int, error) {
 	col := 1
+
+	lineTokVal := ""
 	for col < len(line) {
 		if line[col] == '"' {
 			return Token{
 				Type:  STRING,
-				Value: line[1:col],
+				Value: lineTokVal,
 			}, col + 1, nil
+		} else if line[col] == '\\' {
+			col++
+			if col >= len(line) {
+				break
+			}
+			escaped := line[col]
+			switch escaped {
+			case 'n':
+				lineTokVal += "\n"
+			case 't':
+				lineTokVal += "\t"
+			case 'r':
+				lineTokVal += "\r"
+			case '\\':
+				lineTokVal += "\\"
+			case '"':
+				lineTokVal += "\""
+			default:
+				return Token{}, col, fmt.Errorf("unexpected escape character %c", escaped)
+			}
+		} else {
+			lineTokVal += string(line[col])
 		}
 		col++
 	}

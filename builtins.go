@@ -235,15 +235,22 @@ var builtins = map[string]any{
 		Argc: 2,
 		Fn: func(args []any) (any, *models.InterpreterError) {
 			list := args[0].([]any)
-			return append(list, args[1]), nil
+
+			newList := make([]any, len(list))
+			copy(newList, list)
+
+			return append(newList, args[1]), nil
 		},
 	},
 	"concat": &BuiltinFunction{
 		Argc: 2,
 		Fn: func(args []any) (any, *models.InterpreterError) {
 			list1 := args[0].([]any)
+			newList := make([]any, len(list1))
+			copy(newList, list1)
+
 			list2 := args[1].([]any)
-			return append(list1, list2...), nil
+			return append(newList, list2...), nil
 		},
 	},
 	"concatStr": &BuiltinFunction{
