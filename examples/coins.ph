@@ -67,13 +67,13 @@ let
 
     // wrapper function to make change
     makeChange = func(n)
-        if equals(n, 0) then
+        if not(greaterThan(n, 0)) then
             []
         else
             makeChangeHelper(n, 1, [[]]),
     
     makeChangeGreedy = func(n)
-        if equals(n, 0) then
+        if not(greaterThan(n, 0)) then
             []
         else
             let

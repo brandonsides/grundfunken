@@ -77,8 +77,8 @@ let
     fib = func(n) fibHelper(n, 1, 1),
 
     // takes a number n and returns a list of the first n Fibonacci numbers
-    firstNFibs = func(n) fib(x) for x in range(0, n)
-in let
+    firstNFibs = func(n) fib(x) for x in range(0, n),
+    
     // variables
     lim = parseInt(input("Enter a limit: "))
 in if lessThan(lim, 0) then
