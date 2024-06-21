@@ -58,11 +58,17 @@ func main() {
 }
 
 func interpret(lines []string) (any, *models.InterpreterError) {
+	// split input into "tokens", which are the smallest
+	// meaningful units of the language: words, numbers,
+	// punctuation, etc.
 	toks, err := tokens.Tokenize(lines)
 	if err != nil {
 		return nil, err
 	}
 
+	// parse the tokens into an "expression", which is a
+	// tree-like structure that represents the semantic
+	// relationships between the tokens
 	expression, rest, err := parser.ParseExpression(toks)
 	if err != nil {
 		return nil, err
@@ -75,6 +81,9 @@ func interpret(lines []string) (any, *models.InterpreterError) {
 		}
 	}
 
+	// evaluate the expression to get the final result
+	// with the top-level bindings for certain builtin
+	// identifiers
 	return expression.Evaluate(builtins)
 }
 

@@ -9,24 +9,27 @@ import (
 type TokenType int
 
 const (
-	// Operators, Grouping, and Punctuation
+	// Grouping and Punctuation
 	LEFT_PAREN TokenType = iota
 	RIGHT_PAREN
 	LEFT_SQUARE_BRACKET
 	RIGHT_SQUARE_BRACKET
 	COMMA
 	NEWLINE
-	DOT
+	LEFT_ANGLE_BRACKET
+	RIGHT_ANGLE_BRACKET
+	LEFT_SQUIGGLY_BRACKET
+	RIGHT_SQUIGGLY_BRACKET
+	COLON
+
+	// Operators
 	MINUS
 	PLUS
 	SLASH
 	STAR
-	TILDE
-	AMPERSAND
-	VERTICAL_BAR
 	EQUAL
-	LEFT_ANGLE_BRACKET
-	RIGHT_ANGLE_BRACKET
+	PERCENT
+	DOT
 
 	// Values
 	IDENTIFIER
@@ -41,21 +44,11 @@ const (
 	THEN
 	ELSE
 	FUNC
+	AND
+	OR
+	NOT
+	IS
 )
-
-func (t TokenType) IsInfixOperator() bool {
-	return t == PLUS ||
-		t == SLASH ||
-		t == MINUS ||
-		t == STAR ||
-		t == VERTICAL_BAR ||
-		t == EQUAL
-}
-
-func (t TokenType) IsPrefixOperator() bool {
-	return t == MINUS ||
-		t == TILDE
-}
 
 var tokMap = map[string]TokenType{
 	"(":    LEFT_PAREN,
@@ -67,14 +60,15 @@ var tokMap = map[string]TokenType{
 	"+":    PLUS,
 	"/":    SLASH,
 	"*":    STAR,
-	"~":    TILDE,
-	"&":    AMPERSAND,
-	"|":    VERTICAL_BAR,
 	"=":    EQUAL,
 	"<":    LEFT_ANGLE_BRACKET,
 	">":    RIGHT_ANGLE_BRACKET,
 	"[":    LEFT_SQUARE_BRACKET,
 	"]":    RIGHT_SQUARE_BRACKET,
+	"{":    LEFT_SQUIGGLY_BRACKET,
+	"}":    RIGHT_SQUIGGLY_BRACKET,
+	"%":    PERCENT,
+	":":    COLON,
 	"let":  LET,
 	"in":   IN,
 	"if":   IF,
@@ -82,6 +76,10 @@ var tokMap = map[string]TokenType{
 	"then": THEN,
 	"else": ELSE,
 	"func": FUNC,
+	"and":  AND,
+	"or":   OR,
+	"not":  NOT,
+	"is":   IS,
 }
 
 type Token struct {
@@ -105,14 +103,6 @@ func Tokenize(lines []string) ([]Token, *models.InterpreterError) {
 	return toks, nil
 }
 
-func (t Token) IsInfixOperator() bool {
-	return t.Type.IsInfixOperator()
-}
-
-func (t Token) IsPrefixOperator() bool {
-	return t.Type.IsPrefixOperator()
-}
-
 func tokenizeLine(line string, lineNumber int) ([]Token, *models.InterpreterError) {
 	toks := make([]Token, 0)
 	col := 0
@@ -125,7 +115,8 @@ func tokenizeLine(line string, lineNumber int) ([]Token, *models.InterpreterErro
 			if col+1 < len(line) && line[col+1] == '/' {
 				break
 			}
-		} else if tokType, ok := tokMap[string(char)]; ok {
+		}
+		if tokType, ok := tokMap[string(char)]; ok {
 			toks = append(toks, Token{
 				Type:  tokType,
 				Value: string(char),

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 
 	"github.com/brandonksides/phonk/models"
 )
@@ -29,53 +31,11 @@ func (f BuiltinFunction) Call(args []any) (ret any, err *models.InterpreterError
 }
 
 var builtins = map[string]any{
-	"at": &BuiltinFunction{
-		Argc: 2,
-		Fn: func(args []any) (any, *models.InterpreterError) {
-			list := args[0].([]any)
-			index := args[1].(int)
-			if index < 0 || index >= len(list) {
-				return nil, &models.InterpreterError{
-					Err:            fmt.Errorf("index out of bounds"),
-					SourceLocation: models.SourceLocation{},
-				}
-			}
-			return list[index], nil
-		},
-	},
 	"len": &BuiltinFunction{
 		Argc: 1,
 		Fn: func(args []any) (any, *models.InterpreterError) {
 			list := args[0].([]any)
 			return len(list), nil
-		},
-	},
-	"slice": &BuiltinFunction{
-		Argc: 3,
-		Fn: func(args []any) (any, *models.InterpreterError) {
-			list := args[0].([]any)
-			start := args[1].(int)
-			end := args[2].(int)
-			if start < 0 {
-				start = len(list) + start + 1
-				if start < 0 {
-					return nil, &models.InterpreterError{
-						Err:            fmt.Errorf("start index out of bounds"),
-						SourceLocation: models.SourceLocation{},
-					}
-				}
-			}
-			if end < 0 {
-				end = len(list) + end + 1
-				if end < 0 {
-					return nil, &models.InterpreterError{
-						Err:            fmt.Errorf("end index out of bounds"),
-						SourceLocation: models.SourceLocation{},
-					}
-				}
-			}
-
-			return list[start:end], nil
 		},
 	},
 	"range": &BuiltinFunction{
@@ -93,142 +53,11 @@ var builtins = map[string]any{
 			return ret, nil
 		},
 	},
-	"lessThan": &BuiltinFunction{
-		Argc: 2,
-		Fn: func(args []any) (any, *models.InterpreterError) {
-			v1, ok := args[0].(int)
-			if !ok {
-				return nil, &models.InterpreterError{
-					Err:            fmt.Errorf("expected int, got %T", args[0]),
-					SourceLocation: models.SourceLocation{},
-				}
-			}
-			v2, ok := args[1].(int)
-			if !ok {
-				return nil, &models.InterpreterError{
-					Err:            fmt.Errorf("expected int, got %T", args[1]),
-					SourceLocation: models.SourceLocation{},
-				}
-			}
-			return v1 < v2, nil
-		},
-	},
-	"greaterThan": &BuiltinFunction{
-		Argc: 2,
-		Fn: func(args []any) (any, *models.InterpreterError) {
-			v1, ok := args[0].(int)
-			if !ok {
-				return nil, &models.InterpreterError{
-					Err:            fmt.Errorf("expected int, got %T", args[0]),
-					SourceLocation: models.SourceLocation{},
-				}
-			}
-			v2, ok := args[1].(int)
-			if !ok {
-				return nil, &models.InterpreterError{
-					Err:            fmt.Errorf("expected int, got %T", args[1]),
-					SourceLocation: models.SourceLocation{},
-				}
-			}
-			return v1 > v2, nil
-		},
-	},
-	"equals": &BuiltinFunction{
-		Argc: 2,
-		Fn: func(args []any) (any, *models.InterpreterError) {
-			return args[0] == args[1], nil
-		},
-	},
 	"prepend": &BuiltinFunction{
 		Argc: 2,
 		Fn: func(args []any) (any, *models.InterpreterError) {
 			list := args[1].([]any)
 			return append([]any{args[0]}, list...), nil
-		},
-	},
-	"or": &BuiltinFunction{
-		Argc: 2,
-		Fn: func(args []any) (any, *models.InterpreterError) {
-			v1, ok := args[0].(bool)
-			if !ok {
-				return nil, &models.InterpreterError{
-					Err:            fmt.Errorf("expected bool, got %T", args[0]),
-					SourceLocation: models.SourceLocation{},
-				}
-			}
-
-			// short circuit
-			if v1 {
-				return true, nil
-			}
-
-			v2, ok := args[1].(bool)
-			if !ok {
-				return nil, &models.InterpreterError{
-					Err:            fmt.Errorf("expected bool, got %T", args[1]),
-					SourceLocation: models.SourceLocation{},
-				}
-			}
-			return v2, nil
-		},
-	},
-	"and": &BuiltinFunction{
-		Argc: 2,
-		Fn: func(args []any) (any, *models.InterpreterError) {
-			v1, ok := args[0].(bool)
-			if !ok {
-				return nil, &models.InterpreterError{
-					Err:            fmt.Errorf("expected bool, got %T", args[0]),
-					SourceLocation: models.SourceLocation{},
-				}
-			}
-
-			// short circuit
-			if !v1 {
-				return false, nil
-			}
-
-			v2, ok := args[1].(bool)
-			if !ok {
-				return nil, &models.InterpreterError{
-					Err:            fmt.Errorf("expected bool, got %T", args[1]),
-					SourceLocation: models.SourceLocation{},
-				}
-			}
-			return v2, nil
-		},
-	},
-	"not": &BuiltinFunction{
-		Argc: 1,
-		Fn: func(args []any) (any, *models.InterpreterError) {
-			v, ok := args[0].(bool)
-			if !ok {
-				return nil, &models.InterpreterError{
-					Err:            fmt.Errorf("expected bool, got %T", args[0]),
-					SourceLocation: models.SourceLocation{},
-				}
-			}
-			return !v, nil
-		},
-	},
-	"mod": &BuiltinFunction{
-		Argc: 2,
-		Fn: func(args []any) (any, *models.InterpreterError) {
-			v1, ok := args[0].(int)
-			if !ok {
-				return nil, &models.InterpreterError{
-					Err:            fmt.Errorf("expected int, got %T", args[0]),
-					SourceLocation: models.SourceLocation{},
-				}
-			}
-			v2, ok := args[1].(int)
-			if !ok {
-				return nil, &models.InterpreterError{
-					Err:            fmt.Errorf("expected int, got %T", args[1]),
-					SourceLocation: models.SourceLocation{},
-				}
-			}
-			return v1 % v2, nil
 		},
 	},
 	"append": &BuiltinFunction{
@@ -314,8 +143,14 @@ var builtins = map[string]any{
 		Argc: 1,
 		Fn: func(args []any) (any, *models.InterpreterError) {
 			fmt.Print(args[0])
-			var input string
-			fmt.Scanln(&input)
+			reader := bufio.NewReader(os.Stdin)
+			input, err := reader.ReadString('\n')
+			if err != nil {
+				return nil, &models.InterpreterError{
+					Err:            fmt.Errorf("could not read input"),
+					SourceLocation: models.SourceLocation{},
+				}
+			}
 			return input, nil
 		},
 	},

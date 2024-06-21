@@ -2,37 +2,36 @@ let
     // functions
 
     // takes a list and returns everything after the first element
-    tail = func(l)
-        slice(l, 1, -1),
+    tail = func(list)
+        slice(list, 1, -1),
 
     // takes a function and a list and returns
     // true if all elements in the list satisfy the function
-    all = func(f, l)
-        if equals(len(l), 0) then
+    all = func(condition, list)
+        if len(list) = 0 then
             true
         else
-            let this = at(l, 0) in
-                and(
-                    f(this),
-                    all(f, tail(l))
-                ),
+            let
+                this = at(list, 0)
+            in
+                condition(this) and all(condition, tail(list))
 
     // takes a function and a list and returns a list
     // containing all the elements of the given list up to
     // the first element that does not satisfy the function
     // unlike filter, takeWhile stops at the first element
     // that does not satisfy the function
-    takeWhile = func(f, l)
-        if equals(len(l), 0) then
+    takeWhile = func(condition, list)
+        if equals(len(list), 0) then
             []
         else
-            let this = at(l, 0) in
-                if f(this) then
-                    prepend(this, takeWhile(f, tail(l)))
+            let this = at(list, 0) in
+                if condition(this) then
+                    prepend(this, takeWhile(condition, tail(list)))
                 else
                     [],
 
-    isFactor = func(n, x) equals(0, mod(n, x)),
+    isFactor = func(n, x) 0 = mod(n, x),
 
     // takes a number and returns true if it is prime
     isPrime = func(n)

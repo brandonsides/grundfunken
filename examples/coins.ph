@@ -1,15 +1,15 @@
 let
     // takes a list and returns everything after the first element
     tail = func(l)
-        slice(l, 1, -1),
+        if len(l) > 1 then l[1:] else [],
 
     // takes a list and returns all elements that meet the given condition
     filter = func(l, f)
-        if equals(len(l), 0) then
+        if len(l) is 0 then
             []
         else
             let
-                this = at(l, 0),
+                this = l[0],
                 rest = filter(tail(l), f)
             in
                 if f(this) then
@@ -19,19 +19,18 @@ let
 
     // returns the least element in a list
     min = func(l)
-        if equals(len(l), 0) then
+        if len(l) is 0 then
             [-1, 0]
         else
             let
-                first = at(l, 0),
+                first = l[0],
                 rest = tail(l),
                 restMin = min(rest),
-                restMinIdx = at(restMin, 0),
-                restMinVal = at(restMin, 1)
-            in if or(
-                equals(restMinIdx, -1),
-                lessThan(first, restMinVal)
-            ) then
+                restMinIdx = restMin[0],
+                restMinVal = restMin[1]
+            in if
+                restMinIdx is -1 or first < restMinVal
+            then
                 [0, first]
             else
                 [restMinIdx+1, restMinVal],
@@ -43,46 +42,49 @@ let
     makeChangeHelper = func(trg, cur, prevBests)
         let
             bestWithEachCoinValAsLast = append(
-                at(prevBests, cur - coinVal),
+                prevBests[cur - coinVal],
                 coinVal
             ) for coinVal in filter(
                 coinVals,
-                func(coinVal) not(greaterThan(coinVal, cur))
+                func(coinVal) coinVal <= cur
             ),
 
             curBestIdxAndVal = min(
                 len(coinSeq) for coinSeq in bestWithEachCoinValAsLast
             ),
-            curBestIdx = at(curBestIdxAndVal, 0),
+            curBestIdx = curBestIdxAndVal[0],
 
-            curBestVal = if lessThan(curBestIdx, 0)
-                then []
+            curBestVal = if curBestIdx < 0 then
+                []
             else
-                at(bestWithEachCoinValAsLast, curBestIdx)
+                bestWithEachCoinValAsLast[curBestIdx]
         in
-            if equals(cur, trg) then
+            if cur is trg then
                 curBestVal
             else
                 makeChangeHelper(trg, cur + 1, append(prevBests, curBestVal)),
 
     // wrapper function to make change
     makeChange = func(n)
-        if not(greaterThan(n, 0)) then
+        if n <= 0 then
             []
         else
             makeChangeHelper(n, 1, [[]]),
     
     makeChangeGreedy = func(n)
-        if not(greaterThan(n, 0)) then
+        if n <= 0 then
             []
         else
             let
-                coinVal = filter(coinVals, func(coinVal) not(greaterThan(coinVal, n))),
-                rest = makeChangeGreedy(n - at(coinVal, len(coinVal)-1))
+                coinVal = filter(coinVals, func(coinVal) coinVal <= n),
+                rest = makeChangeGreedy(n - coinVal[len(coinVal)-1])
             in
-                prepend(at(coinVal, len(coinVal)-1), rest),
+                prepend(coinVal[len(coinVal)-1], rest),
     
     valStr = input("Enter a value in pence: "),
     val = parseInt(valStr)
 in
-    ["\n\tgreedy:", makeChangeGreedy(val), "\n\toptimal:", makeChange(val), "\n"]
+    [
+        "\n\tgreedy:", makeChangeGreedy(val),
+        "\n\toptimal:", makeChange(val), "\n"
+    ]

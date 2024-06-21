@@ -1,55 +1,67 @@
 let
 // tree utils
-    emptyTree = [false, false, [], []],
+    emptyTree = {
+        val: false,
+        hasVal: false,
+        left: false,
+        right: false
+    },
 
-    treeWithVal = func(tree, val) [true, val, at(tree, 2), at(tree, 3)],
+    treeWithVal = func(tree, val) {
+        val: val,
+        hasVal: true,
+        left: tree.left,
+        right: tree.right
+    },
             
-    treeWithLeft = func(tree, left) [at(tree, 0), at(tree, 1), left, at(tree, 3)],
+    treeWithLeft = func(tree, left) {
+        val: tree.val,
+        hasVal: tree.hasVal,
+        left: left,
+        right: tree.right
+    },
 
-    treeWithRight = func(tree, right) [at(tree, 0), at(tree, 1), at(tree, 2), right],
+    treeWithRight = func(tree, right) {
+        val: tree.val,
+        hasVal: tree.hasVal,
+        left: tree.left,
+        right: right
+    },
 
-    treeHasVal = func(tree) at(tree, 0),
+    treeHasLeft = func(tree) tree.left is not false,
 
-    treeVal = func(tree) at(tree, 1),
-
-    treeHasLeft = func(tree) greaterThan(len(at(tree, 2)), 0),
-
-    treeLeft = func(tree) at(tree, 2),
-
-    treeHasRight = func(tree) greaterThan(len(at(tree, 3)), 0),
-
-    treeRight = func(tree) at(tree, 3),
+    treeHasRight = func(tree) tree.right is not false,
 
 // binary search tree functions
     bstPush = func(tree, val)
-        if not(treeHasVal(tree)) then
+        if not tree.hasVal then
             treeWithVal(tree, val)
-        else if lessThan(val, treeVal(tree)) then
+        else if val < tree.val then
             if treeHasLeft(tree) then
-                treeWithLeft(tree, bstPush(treeLeft(tree), val))
+                treeWithLeft(tree, bstPush(tree.left, val))
             else
                 treeWithLeft(tree, treeWithVal(emptyTree, val))
         else
             if treeHasRight(tree) then
-                treeWithRight(tree, bstPush(treeRight(tree), val))
+                treeWithRight(tree, bstPush(tree.right, val))
             else
                 treeWithRight(tree, treeWithVal(emptyTree, val)),
     
     bstFind = func(tree, val)
-        if not(treeHasVal(tree)) then
+        if not tree.hasVal then
             false
-        else if equals(val, treeVal(tree)) then
+        else if val is tree.val then
             true
-        else if lessThan(val, treeVal(tree)) then
-            if not(treeHasLeft(tree)) then
+        else if val < tree.val then
+            if not treeHasLeft(tree) then
                 false
             else
-                bstFind(treeLeft(tree), val)
+                bstFind(tree.left, val)
         else
-            if not(treeHasRight(tree)) then
+            if not treeHasRight(tree) then
                 false
             else
-                bstFind(treeRight(tree), val),
+                bstFind(tree.right, val),
     
 // sample tree
     tree = bstPush(bstPush(bstPush(bstPush(emptyTree, 5), 3), 7), 1)
