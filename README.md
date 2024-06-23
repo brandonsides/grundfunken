@@ -45,24 +45,43 @@ and *functions*.  Here are example literals of the various types:
 
 # Variables
 
-The language has three ways of introducing a new variable: `let`, `for`, and `func`.
+The language has three ways of introducing a new variable: `let`, `for`, and `func`.  In each case,
+with minor syntactic variations, two expressions are being evaluated: the *using* expression,
+*binding* expression, and the *binding identifier*.
+
+The *binding identifier* is, essentially, the name of the variable being introduced.
+
+The *binding expression* is the value being assigned to the variable.
+
+The *using expression* is the expression in which the variable being introduced can be used.
+
+When considered as part of an overarching `let`, `for`, or `func` expression, these expressions will
+be called *clauses*.
 
 ## Let
 
 A `let` expression is the simplest way of binding a variable in Phonk.  It consists of a
-*binding identifier*, a `let` clause, and an `in` clause, in the following form:
+binding identifier, a `let` clause (the *binding expression*), and an `in` clause (the *using*
+expression).  A `let` expression binds the binding identifier to the binding expression, and returns
+the value of its *using expression* as evaluated with the binding in place.
+
+To give a concrete example:
 
 ```swift
 let x = 4 in x
 ```
 
 In the above program, the binding identifier is `x`, the `let` clause is `4`, and the `in` clause is
-`x`.  The program evaluates to `4`.  The value of the `let` clause - namely, `4` - is bound to
-the identifier `x`, and then the `in` clause is evaluated given that binding.  In this case, the
-`in` clause is just `x`, which evaluates to `4`.
+`x`.  The value of the `let` clause - namely, `4` - is bound to the identifier `x`, and then the
+`in` clause is evaluated given that binding.  In this case, the `in` clause is just `x`, which
+evaluates to `4`.  Thus the entire `let` expression evaluates to `4`.
 
-The binding is only in scope when the `in` clause is being evaluated; it is "forgotten" after that
-point.  Thus, the following program is invalid:
+### Scope
+
+Due to scope, a variable may have different values in different contexts; it's important to keep
+these straight.  In general, it should be remembered that a given binding is only in scope when the
+relevant *using expression* is being evaluated; it is "forgotten" after that point.  In the case of
+`let` expressions, this means the `in` clause.  Thus, the following program is invalid:
 
 ```swift
 let 
@@ -99,6 +118,42 @@ which was bound in the *inner* `let` expression.  Since this binding has fallen 
 identifier `y` is no longer bound to a value, resulting in the "unbound identifier" error we see
 above.
 
+Keeping scope straight can be challenging.  Take the following example:
+
+
+```swift
+    let
+        a = 3
+    in (
+        let
+            a = a + 1
+        in
+            a + a
+    ) + a // 11
+```
+
+In this program, we see that `a` is used as the binding identifier in both `let` expressions.  This
+is confusing to the human reader, and should be avoided where possible, but nonetheless it is
+plausible that *shadowing* of this kind may occur in real-world code.
+
+In this case, we again have an *outer* and an *inner* let expression.  The outer `let` expression
+binds the value `3` to the identifier `a` and then evaluates its `in` clause, which is the *inner*
+`let` expression, plus `a`.
+
+We now need to evaluate the inner `let` expression's *binding expression*, which is its `let` clause
+`a + 1`.  Since we are still evaluating the *outer* let expression's *in* clause, the original
+binding of `a` is still in scope, so this expression yields `4`.  This value is then bound to the
+identifier `a` in the *inner* `let` expression's `in` clause, `a + a`.  This evaluates to `8`.  Thus
+the whole inner `let` expression evaluates to `8`.
+
+Now that we know the value of the inner `let` expression, we can finish evaluating the `in` clause
+of the outer `let` expression, which is that value plus `a`.  We are no longer evaluating the `in`
+clause of the inner let expression, so that binding of `a` is out of scope.  We have now fallen back
+to the *original* binding of `a`, namely `3`.  Thus, the expression evaluates to `8 + 3`, which is
+`11`.  Thus the whole outer let expression evaluates to 11.
+
+### Multiple Bindings
+
 A single `let` expression can support multiple bindings, and hence multiple `let` clauses:
 
 ```swift
@@ -129,52 +184,86 @@ However, a `let` clause cannot reference a binding that will be bound *later* in
 
 ## For
 
-A `for` expression consists of a `for` clause, a binding identifier, and an `in` clause can be used to manipulate an array
-value-by-value.  It looks like this:
+A `for` expression consists of a `for` clause (the using expression), a binding identifier, and an
+`in` clause (the binding expression), and can be used to manipulate an array value-by-value.  Note
+in this case that the `in` clause is the *binding* expression, whereas in the case of a `let`
+expression, the `in` clause is the *using* expression.
+
+A `for` expression looks like this:
 
 ```swift
 (i + 1) for i in [1,2,3]
 ```
 
-This program evaluates to `[2 3 4]` (as a temporary quirk, arrays are represented differently
-in a program's output than in the language itself).  Each element of the original array (given in
+This program evaluates to `[2, 3, 4]`.  Each element of the original array (given in
 the `in` clause) is bound to the binding identifier `i`, and the `for` clause is evaluated; the returned
-array contains the results of each evaluation.  So, in this case, the for clause is evaluated for
+array contains the results of each evaluation.  So, in this case, the `for` clause is evaluated for
 each value of the original array:
 
  - `1` is bound to `i`; `i+1` is evaluated as `2`
  - `2` is bound to `i`; `i+1` is evaluated as `3`
  - `3` is bound to `i`; `i+1` is evaluated as `4`
 
- The returned array contains all these results in the same order as the original array; hence,
- `[2, 3, 4]`.
+The returned array contains all these results in the same order as the original array; hence,
+`[2, 3, 4]`.
 
-As another temporary quirk, the `for` keyword has the highest precedence in the language, so it's
+Like the `let` expression, the `for` expression drops the new binding after it has finished
+evaluating the `for` clause for each item in the array.
+
+As a temporary quirk, the `for` keyword has the highest precedence in the language, so it's
 usually necessary to wrap the `for` clause in parentheses.  If they are omitted, unexpected results
 can occur; if we try to evaluate the following program:
 
 ```swift
-i + 1 for i in [1,2,3]
+2 * i for i in [1,2,3]
 ```
 
 We get an error:
 
 ```
-./phonk -input loop.ph
-error at line 1, column 1: cannot evaluate unbound identifier
-i + 1 for i in [1,2,3]
-^-here
+error at line 1, column 7: operator '+' cannot be applied to second operand
+2 * i for i in [1,2,3]
+      ^-here
 ```
 
-Because the `for` keyword takes precedence over `+`, this program is equivalent to
+Because the `for` keyword takes precedence over `*`, this program is equivalent to
 
 ```swift
-i + (1 for i in [1,2,3])
+2 * (i for i in [1,2,3])
 ```
 
-In this case, the `for` clause is just `1`.  The `for` expression only binds its binding identifer
+In this case, the `for` clause is just `i`.  The `for` expression only binds its binding identifer
+when evaluating this `for` clause for each item, yielding `[1, 2, 3]`.  This is then used as the
+second operand of the `*` operator, but this operator can only be applied to `int`s; thus, the
+error we see above.
 
+This precedence issue can also cause scope ambiguities.  Take this expression:
 
+```swift
+let i = 3 in i for i in [1, 2, 3]
+```
+
+In fact, the language give `for` precedence over `let`, so this expression is equivalent to
+
+```swift
+let i = 3 in (i for i in [1, 2, 3])
+```
+
+which evaluates to `[1, 2, 3]`.  However, it could just as well parse this as
+
+```swift
+(let i = 3 in i) for i in [1, 2, 3]
+```
+
+which evaluates to `[3, 3, 3]`.  Where one uses a construction like this, it must be remembered that
+`for` takes precedence over `let`; as with any kind `for` clause that relies on any kind of
+syntactic construction or operator, the clause will need to be wrapped in parentheses.  If the `for`
+clause is intended to take precedence over the syntactic elements that come before it, the `for`
+clause should be wrapped in parentheses for explicit disambiguation:
+
+```swift
+let i = 3 in (i for i in [1, 2, 3]) // [1, 2, 3]
+```
 
 # Roadmap
 
