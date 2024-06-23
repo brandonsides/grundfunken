@@ -143,13 +143,14 @@ binds the value `3` to the identifier `a` and then evaluates its `in` clause, wh
 We now need to evaluate the inner `let` expression's *binding expression*, which is its `let` clause
 `a + 1`.  Since we are still evaluating the *outer* let expression's *in* clause, the original
 binding of `a` is still in scope, so this expression yields `4`.  This value is then bound to the
-identifier `a` in the *inner* `let` expression's `in` clause, `a + a`.  This evaluates to `8`.  Thus
-the whole inner `let` expression evaluates to `8`.
+identifier `a` - overriding the original binding of `a` - in the *inner* `let` expression's `in`
+clause, `a + a`.  This evaluates to `8`.  Thus the whole inner `let` expression evaluates to `8`.
 
 Now that we know the value of the inner `let` expression, we can finish evaluating the `in` clause
 of the outer `let` expression, which is that value plus `a`.  We are no longer evaluating the `in`
-clause of the inner let expression, so that binding of `a` is out of scope.  We have now fallen back
-to the *original* binding of `a`, namely `3`.  Thus, the expression evaluates to `8 + 3`, which is
+clause of the inner let expression, so that binding of `a` is out of scope.  However, `a` is not
+unbound; we are still evaluating the *outer* let expression, which binds `a` to `3`.  This binding
+is still in scope and no longer shadowed.  Thus, the expression evaluates to `8 + 3`, which is
 `11`.  Thus the whole outer let expression evaluates to 11.
 
 ### Multiple Bindings
@@ -218,7 +219,7 @@ can occur; if we try to evaluate the following program:
 2 * i for i in [1,2,3]
 ```
 
-We get an error:
+we might expect it to return `[2, 4, 6]`.  Instead, we get an error:
 
 ```
 error at line 1, column 7: operator '+' cannot be applied to second operand
@@ -256,7 +257,7 @@ which evaluates to `[1, 2, 3]`.  However, it could just as well parse this as
 ```
 
 which evaluates to `[3, 3, 3]`.  Where one uses a construction like this, it must be remembered that
-`for` takes precedence over `let`; as with any kind `for` clause that relies on any kind of
+`for` takes precedence over `let`; as with any kind of `for` clause that relies on any kind of
 syntactic construction or operator, the clause will need to be wrapped in parentheses.  If the `for`
 clause is intended to take precedence over the syntactic elements that come before it, the `for`
 clause should be wrapped in parentheses for explicit disambiguation:
