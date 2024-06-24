@@ -8,10 +8,10 @@ import (
 )
 
 type ForExpression struct {
-	Expression1 models.Expression
-	Identifier  string
-	Expression2 models.Expression
-	loc         models.SourceLocation
+	ForClause  models.Expression
+	Identifier string
+	InClause   models.Expression
+	loc        models.SourceLocation
 }
 
 func (fe *ForExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
@@ -22,7 +22,7 @@ func (fe *ForExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		innerBindings[k] = v
 	}
 
-	iterableExp, err := fe.Expression2.Evaluate(innerBindings)
+	iterableExp, err := fe.InClause.Evaluate(innerBindings)
 	if err != nil {
 		return nil, err
 	}
@@ -31,13 +31,13 @@ func (fe *ForExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	if !ok {
 		return nil, &models.InterpreterError{
 			Err:            errors.New("for expression must evaluate to an array"),
-			SourceLocation: fe.Expression2.SourceLocation(),
+			SourceLocation: fe.InClause.SourceLocation(),
 		}
 	}
 
 	for _, v := range iterableExpArr {
 		innerBindings[fe.Identifier] = v
-		retVal, err := fe.Expression1.Evaluate(innerBindings)
+		retVal, err := fe.ForClause.Evaluate(innerBindings)
 		if err != nil {
 			return nil, err
 		}
@@ -90,9 +90,9 @@ func parseForExpression(exp1 models.Expression, toks []tokens.Token) (exp models
 	}
 
 	return &ForExpression{
-		Expression1: exp1,
-		Identifier:  identifier,
-		Expression2: exp2,
-		loc:         toks[0].SourceLocation,
+		ForClause:  exp1,
+		Identifier: identifier,
+		InClause:   exp2,
+		loc:        toks[0].SourceLocation,
 	}, rest, nil
 }

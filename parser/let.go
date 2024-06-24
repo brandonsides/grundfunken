@@ -13,9 +13,9 @@ type BindingExpression struct {
 }
 
 type LetExpression struct {
-	loc                models.SourceLocation
-	BindingExpressions []BindingExpression
-	Expression2        models.Expression
+	loc        models.SourceLocation
+	LetClauses []BindingExpression
+	InClause   models.Expression
 }
 
 func (le *LetExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
@@ -24,7 +24,7 @@ func (le *LetExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		newBindings[k] = v
 	}
 
-	for _, bindingExp := range le.BindingExpressions {
+	for _, bindingExp := range le.LetClauses {
 		k, v := bindingExp.Identifier, bindingExp.Expression
 		val, err := v.Evaluate(newBindings)
 		if err != nil {
@@ -38,7 +38,7 @@ func (le *LetExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		}
 	}
 
-	return le.Expression2.Evaluate(newBindings)
+	return le.InClause.Evaluate(newBindings)
 }
 
 func (le *LetExpression) SourceLocation() models.SourceLocation {
@@ -132,8 +132,8 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 	}
 
 	return &LetExpression{
-		BindingExpressions: bindingExpressions,
-		loc:                toks[0].SourceLocation,
-		Expression2:        exp2,
+		LetClauses: bindingExpressions,
+		loc:        toks[0].SourceLocation,
+		InClause:   exp2,
 	}, rest, nil
 }

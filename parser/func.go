@@ -9,10 +9,11 @@ import (
 
 type FunctionExpression struct {
 	args []string
-	exp  models.Expression
+	body models.Expression
 }
 
 func (fe *FunctionExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+	// capture the current bindings
 	retBindings := make(models.Bindings)
 	for k, v := range bindings {
 		retBindings[k] = v
@@ -21,12 +22,12 @@ func (fe *FunctionExpression) Evaluate(bindings models.Bindings) (any, *models.I
 	return &models.ExpFunction{
 		Args:     fe.args,
 		Bindings: retBindings,
-		Exp:      fe.exp,
+		Exp:      fe.body,
 	}, nil
 }
 
 func (fe *FunctionExpression) SourceLocation() models.SourceLocation {
-	return fe.exp.SourceLocation()
+	return fe.body.SourceLocation()
 }
 
 func parseFunction(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
@@ -108,6 +109,6 @@ func parseFunction(toks []tokens.Token) (exp models.Expression, rest []tokens.To
 
 	return &FunctionExpression{
 		args: args,
-		exp:  exp,
+		body: exp,
 	}, rest, nil
 }
