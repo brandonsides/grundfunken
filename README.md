@@ -244,7 +244,7 @@ This precedence issue can also cause scope ambiguities.  Take this expression:
 let i = 3 in i for i in [1, 2, 3]
 ```
 
-In fact, the language give `for` precedence over `let`, so this expression is equivalent to
+In fact, the language gives `for` precedence over `let`, so this expression is equivalent to
 
 ```swift
 let i = 3 in (i for i in [1, 2, 3])
@@ -259,12 +259,130 @@ which evaluates to `[1, 2, 3]`.  However, it could just as well parse this as
 which evaluates to `[3, 3, 3]`.  Where one uses a construction like this, it must be remembered that
 `for` takes precedence over `let`; as with any kind of `for` clause that relies on any kind of
 syntactic construction or operator, the clause will need to be wrapped in parentheses.  If the `for`
-clause is intended to take precedence over the syntactic elements that come before it, the `for`
-clause should be wrapped in parentheses for explicit disambiguation:
+clause marker is intended to take precedence over the syntactic elements that come before it, it is
+recommended that the `for` be wrapped in parentheses for explicit disambiguation:
 
 ```swift
 let i = 3 in (i for i in [1, 2, 3]) // [1, 2, 3]
 ```
+
+## Func
+
+A `func` expression is used to create a function, which is just another kind of value in Phonk.  The
+distinctive feature of functions is that they can be called.  Take this example:
+
+```swift
+let
+    f = func(x) 2 * x
+in
+    f(3)
+```
+
+The `func` keyword is invoked on line 2 to create a function; the function is called on line 4.
+
+In the case of this function, the *using expression* comes in the form of the *function body*.  The
+binding identifier is wrapped in parentheses after the `func` keyword.  The `binding expression` is
+supplied wherever in the code the function is *called* in the form of the function's *argument*, which may be
+anywhere the function is in scope.  Wherever the function is called, the argument expressions are
+evaluated and then bound to the function's binding identifier so that its using expression can be
+evaluated.
+
+So, in this case, the *call* expression on line 4 binds the supplied value, `3`, to the function's
+binding identifier `x` and then returns the value of its body, `2 * x`, which evaluates to 6. 
+
+Functions can support multiple arguments; the number of arguments supplied by the calling expression
+must match the number of binding identifiers declared by the function:
+
+```swift
+let
+    plus = func(a, b) a + b
+in
+    plus(4, 3) // 7
+```
+
+Functions *capture scope*; this means that, when the body of a function is being evaluated, it
+is evaluated with the bindings that were in scope when the function itself was defined, not those
+that are in scope when it is called.  Thus, the following program runs:
+
+```swift
+let
+    f = let y = 4 in func(a) a + y
+in
+    f(3) // 7
+```
+
+Because the function is defined while `y` is in scope, it uses that binding when it is called later
+on line 4, even though the binding of `y` has fallen out of scope at the time of the function call.
+On the other hand, the following program does *not* run:
+
+```swift
+let
+    f = func(a) a + y
+in
+    let
+        y = 3
+    in
+        f(3)
+```
+
+The bindings that are in scope when the function is called are not in scope while the function's
+body is being evaluated, because the scope is essentially replaced with the scope that existed at
+the time of the function's definition.  `y` was not in scope then, and thus we get an unbound
+identifier error:
+
+```
+error at line 2, column 21: cannot evaluate unbound identifier
+    f = func(a) a + y
+                    ^-here
+```
+
+Finally, functions can refer to themselves.  When they are defined as part of a `let` expression,
+they are included among their own captured bindings by their associated binding identifier:
+
+```
+let
+    upTo(n) = append(upTo(n-1), n)
+in
+    recurse(3)
+```
+
+# Conditionals
+
+The final syntactic construct in Phonk is the `if` expression.  Unlike those covered so far, an `if`
+expression does not involve binding an identifier, and does not have binding or using expressions.
+
+Instead, an `if` expression consists of an `if` clause, a `then` clause, and an `else` clause.  If
+the `if` clause evaluates to `true`, the `then` clause is evaluated, and the whole `if` expression
+evaluates to that value.  Otherwise, the `else` clause is evaluated, and the whole `if` expression
+evaluates to *that* value.
+
+Take this program as an example:
+
+```
+let
+    x = true
+in
+    if x then
+        "hello"
+    else
+        "world"
+```
+
+The `if` clause is `x`, which evaluates to `true`.  Thus, the whole `if` expression evaluates to the
+value of the `then` clause, which is `"hello"`.  If we instead let `x` be `false`:
+
+```
+let
+    x = true
+in
+    if x then
+        "hello"
+    else
+        "world"
+```
+
+The `if` clause now evaluates to `false`, so the whole `if` expression evaluates to `true`.
+
 
 # Roadmap
 
