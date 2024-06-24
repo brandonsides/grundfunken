@@ -1,39 +1,39 @@
-# Phonk
+# Grundfunken
 
-**Phonk** is a terrible, no-purpose, experimental programming language that is currently slated to
+**Grundfunken** is a terrible, no-purpose, experimental programming language that is currently slated to
 become the best, most-used, most widely critically- and popularly-acclaimed programming language of
 all time by the year 2274.
 
 # Build and Install
 
-The Phonk interpro-compiler\* is currently not distributed in binary form, so it will need to be
+The Grundfunken interpro-compiler\* is currently not distributed in binary form, so it will need to be
 compiled from source using the [Go compiler](https://go.dev/dl/), version 1.22 or higher.
 
 # The Basics
 
-The most important unit of code in Phonk is the *expression*; an expression is simply a semantic
+The most important unit of code in Grundfunken is the *expression*; an expression is simply a semantic
 unit that can be *evaluated*; that is, resolved to a *value*.
 
-All Phonk programs are ultimately expressions, constructed from smaller expressions connected
-by the language's syntactic constructs.  Likewise, any expression is a valid Phonk program; the
-simplest valid Phonk programs, then, are literals of the fundamental types, say `string`:
+All Grundfunken programs are ultimately expressions, constructed from smaller expressions connected
+by the language's syntactic constructs.  Likewise, any expression is a valid Grundfunken program; the
+simplest valid Grundfunken programs, then, are literals of the fundamental types, say `string`:
 
 ```
 "hello world"
 ```
 
-The above is a valid Phonk program that evaluates to the string "hello world"; saving it as
-`hello-world.ph` and running it, we see that the interpreter outputs the string as the program's
+The above is a valid Grundfunken program that evaluates to the string "hello world"; saving it as
+`hello-world.gf` and running it, we see that the interpreter outputs the string as the program's
 result:
 
 ```
-% ./phonk -input hello-world.ph
+% ./drive -input hello-world.gf
 Result: hello world
 ```
 
 # Types
 
-The current fundamental types in Phonk are *integers*, *booleans*, *strings*, *arrays*, *objects*,
+The current fundamental types in Grundfunken are *integers*, *booleans*, *strings*, *arrays*, *objects*,
 and *functions*.  Here are example literals of the various types:
 
 - integer: `1`, `45`, `-16`
@@ -60,7 +60,7 @@ be called *clauses*.
 
 ## Let
 
-A `let` expression is the simplest way of binding a variable in Phonk.  It consists of a
+A `let` expression is the simplest way of binding a variable in Grundfunken.  It consists of a
 binding identifier, a `let` clause (the *binding expression*), and an `in` clause (the *using*
 expression).  A `let` expression binds the binding identifier to the binding expression, and returns
 the value of its *using expression* as evaluated with the binding in place.
@@ -268,7 +268,7 @@ let i = 3 in (i for i in [1, 2, 3]) // [1, 2, 3]
 
 ## Func
 
-A `func` expression is used to create a function, which is just another kind of value in Phonk.  The
+A `func` expression is used to create a function, which is just another kind of value in Grundfunken.  The
 distinctive feature of functions is that they can be called.  Take this example:
 
 ```swift
@@ -348,7 +348,7 @@ in
 
 # Conditionals
 
-The final syntactic construct in Phonk is the `if` expression.  Unlike those covered so far, an `if`
+The final syntactic construct in Grundfunken is the `if` expression.  Unlike those covered so far, an `if`
 expression does not involve binding an identifier, and does not have binding or using expressions.
 
 Instead, an `if` expression consists of an `if` clause, a `then` clause, and an `else` clause.  If
@@ -386,15 +386,15 @@ The `if` clause now evaluates to `false`, so the whole `if` expression evaluates
 
 # Roadmap
 
-The 230-year roadmap for Phonk includes the following language features:
+The 230-year roadmap for Grundfunken includes the following language features:
 
-- purely functional: the Phonk language syntax will strictly require code to abide by the pure
+- purely functional: the Grundfunken language syntax will strictly require code to abide by the pure
 functional paradigm.
 
-- Dependently-typed: Phonk will support dependent types, allowing types to depend on runtime values.
+- Dependently-typed: Grundfunken will support dependent types, allowing types to depend on runtime values.
 Syntactically, types will behave like any other kind of object, and it will be possible to
 parametrize them not only by other types (as one would do when creating a "generic" type, as has
-become standard in modern programming languages), but also by runtime values.  Indeed, Phonk erodes
+become standard in modern programming languages), but also by runtime values.  Indeed, Grundfunken erodes
 the boundary between types and values to the point that a developer may be hesitant to think
 primarily in those terms: `type` is, itself, just another type an object can have.
 
@@ -416,7 +416,7 @@ program's correctness to be checked at compile-time.  Because reasoning about de
 complex and time-consuming for a compiler, the language will support *proof annotations* allowing
 a programmer to supply manual proofs that a value or type necessarily satisfies another type.
 
-- Paraconsistent: The Phonk interpro-compiler will support paraconsistency in type reasoning,
+- Paraconsistent: The Grundfunken interpro-compiler will support paraconsistency in type reasoning,
 enabling types to be fully first-class objects while avoiding (or rather, embracing) certain
 paradoxes such as:
 
@@ -431,13 +431,13 @@ paradoxes such as:
         - a function `ordered(t type, cmp func(a t, b t) bool)` which returns a well-ordering of the
         elements of a given type, given a comparison function over elements of that type.
 
-By 2550, Phonk is slated to support the following features:
+By 2550, Grundfunken is slated to support the following features:
 
 - Compiled and Bootstrapped: Once the core language features are present, a compiler backend
 will be written, thus transforming the interpro-compiler into, well, an actual compiler.  With a
 minimal compiler in place, written in Go as the current interpro-compiler is, an equivalent compiler
-will be written in Phonk and compiled, providing a self-compiling Phonk compiler that can be used to
-continue developing Phonk *in* Phonk.
+will be written in Grundfunken and compiled, providing a self-compiling Grundfunken compiler that can be used to
+continue developing Grundfunken *in* Grundfunken.
 
 - Looser functionalism enforcement: The language will continue to encourage purely functional code
 wherever possible, while allowing explicit violations of this principle where required.  Where
@@ -449,7 +449,7 @@ conspicuous.
 semantics where possible using native implicit monads representing "global state".  It will be
 possible to make the same kinds of guarantees about the global state as any other value.
 
-- Natively concurrent: Phonk will support concurrent loops and subroutine calls natively for
+- Natively concurrent: Grundfunken will support concurrent loops and subroutine calls natively for
 code that abides by the pure-functional paradigm.  More minimal compile-time concurrency features
 will be available to code that manipulates state.  Code that is marked as state-manipulating will
 have the ability to more directly manage concurrency, allowing optimization where the language's

@@ -1,4 +1,5 @@
 let
+    // general utils
     tail = func(l)
         if len(l) <= 1 then
             []
@@ -20,6 +21,7 @@ let
 
     min = func(l)
         if len(l) is 0 then
+            // false indicates no minumum
             false
         else
             let
@@ -36,6 +38,7 @@ let
 
     find = func(f, l)
         if len(l) is 0 then
+            // false indicates not found
             false
         else if f(l[0]) then
             0
@@ -48,7 +51,6 @@ let
                 else
                     res + 1,
 
-    // general utils
     concatAll = func(l)
         if len(l) is 0 then
             ""
@@ -132,31 +134,20 @@ let
                     prepend(mazeRowWithCoordAs(curRow, x, tile), mazeRest)
                 else
                     prepend(curRow, mazeWithCoordsAs(mazeRest, x, y-1, tile)),
-
-    // maze
-    defaultMaze = [
-        [0, 1, 1, 0, 1, 1, 1, 1, 0, 0],
-        [2, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 1, 1, 1, 0, 1, 1, 1, 0, 1],
-        [1, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 1, 0, 1, 1, 1, 1, 1, 1, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-        [1, 0, 1, 0, 1, 1, 1, 1, 3, 1],
-        [0, 0, 1, 0, 0, 0, 0, 0, 0, 1]
-    ],
-
+    
     findStart = func(maze)
         let
+            // in each row, try to find the start tile
             startIdxForEachRow = find(func(tile) tile is TILE_TYPE_START, row) for row in maze,
+            // find the row with non-false start index; i.e. the row for which the start location was found
             startRow = find(func(startIdxResult) startIdxResult is not false, startIdxForEachRow),
             startCol = startIdxForEachRow[startRow]
         in {
             x: startCol,
             y: startRow
         },
-        
 
-    solveMazeHelper = func(maze, x, y, pathSoFar)
+    solveMazeHelper = func(maze, x, y)
         if x < 0 or y < 0 or x >= len(maze[0]) or y >= len(maze) then
             false
         else
@@ -166,15 +157,20 @@ let
                 if tile is TILE_TYPE_WALL or tile is TILE_TYPE_PATH then
                     false
                 else if tile is TILE_TYPE_END then
-                    pathSoFar
+                    []
                 else
                     let
                         maze = mazeWithCoordsAs(maze, x, y, TILE_TYPE_PATH),
-                        unused = print(concatStr("\n", mazeString(maze))),
-                        pathLeft = solveMazeHelper(maze, x - 1, y, append(pathSoFar, DIR_LEFT)),
-                        pathUp = solveMazeHelper(maze, x, y - 1, append(pathSoFar, DIR_UP)),
-                        pathRight = solveMazeHelper(maze, x + 1, y, append(pathSoFar, DIR_RIGHT)),
-                        pathDown = solveMazeHelper(maze, x, y + 1, append(pathSoFar, DIR_DOWN)),
+                        _ = print(concatStr("\n", mazeString(maze))),
+                        _ = sleep(100),
+                        pathLeft = solveMazeHelper(maze, x - 1, y),
+                        pathLeft = if pathLeft is false then false else prepend(DIR_LEFT, pathLeft),
+                        pathUp = solveMazeHelper(maze, x, y - 1),
+                        pathUp = if pathUp is false then false else prepend(DIR_UP, pathUp),
+                        pathRight = solveMazeHelper(maze, x + 1, y),
+                        pathRight = if pathRight is false then false else prepend(DIR_RIGHT, pathRight),
+                        pathDown = solveMazeHelper(maze, x, y + 1),
+                        pathDown = if pathDown is false then false else prepend(DIR_DOWN, pathDown),
                         paths = [pathLeft, pathUp, pathRight, pathDown],
                         goodPaths = filter(paths, func(path) path is not false),
                         minPathLenAndIdx = min(len(path) for path in goodPaths),
@@ -189,9 +185,21 @@ let
         let
             startCoords = findStart(maze)
         in
-            solveMazeHelper(maze, startCoords.x, startCoords.y, []),
+            solveMazeHelper(maze, startCoords.x, startCoords.y),
 
-    unused = print(mazeString(defaultMaze)),
+    // maze
+    defaultMaze = [
+        [0, 1, 1, 0, 1, 1, 1, 1, 0, 0],
+        [2, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [0, 0, 1, 1, 0, 1, 1, 1, 0, 1],
+        [1, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+        [0, 1, 0, 1, 1, 1, 0, 1, 1, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+        [1, 0, 1, 0, 1, 1, 0, 1, 3, 1],
+        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
+    ],
+
+    _ = print(mazeString(defaultMaze)),
     
     res = solveMaze(defaultMaze)
 in

@@ -1,3 +1,3 @@
-module github.com/brandonksides/phonk
+module github.com/brandonksides/grundfunken
 
 go 1.22

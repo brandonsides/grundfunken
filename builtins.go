@@ -4,8 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"time"
 
-	"github.com/brandonksides/phonk/models"
+	"github.com/brandonksides/grundfunken/models"
 )
 
 type BuiltinFunction struct {
@@ -159,6 +160,14 @@ var builtins = map[string]any{
 		Fn: func(args []any) (any, *models.InterpreterError) {
 			fmt.Println(args[0])
 			return nil, nil
+		},
+	},
+	"sleep": &BuiltinFunction{
+		Argc: 1,
+		Fn: func(a []any) (any, *models.InterpreterError) {
+			t := a[0].(int)
+			time.Sleep(time.Duration(t) * time.Millisecond)
+			return t, nil
 		},
 	},
 	"parseInt": &BuiltinFunction{

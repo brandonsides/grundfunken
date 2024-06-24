@@ -3,8 +3,8 @@ package parser
 import (
 	"errors"
 
-	"github.com/brandonksides/phonk/models"
-	"github.com/brandonksides/phonk/tokens"
+	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/tokens"
 )
 
 func parseExpressions(toks []tokens.Token) (exps []models.Expression, rest []tokens.Token, err *models.InterpreterError) {

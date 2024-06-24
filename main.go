@@ -8,9 +8,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/brandonksides/phonk/models"
-	"github.com/brandonksides/phonk/parser"
-	"github.com/brandonksides/phonk/tokens"
+	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/parser"
+	"github.com/brandonksides/grundfunken/tokens"
 )
 
 type logger struct{}

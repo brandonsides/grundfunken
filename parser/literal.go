@@ -1,6 +1,6 @@
 package parser
 
-import "github.com/brandonksides/phonk/models"
+import "github.com/brandonksides/grundfunken/models"
 
 type LiteralExpression struct {
 	val any

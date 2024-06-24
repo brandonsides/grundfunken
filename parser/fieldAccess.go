@@ -3,7 +3,7 @@ package parser
 import (
 	"errors"
 
-	"github.com/brandonksides/phonk/models"
+	"github.com/brandonksides/grundfunken/models"
 )
 
 type FieldAccessExpression struct {
