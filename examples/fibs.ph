@@ -2,19 +2,18 @@ let
     // functions
 
     // takes a list and returns everything after the first element
-    tail = func(list)
-        slice(list, 1, -1),
+    tail = func(list) if len(list) <= 1 then [] else list[1:],
 
     // takes a function and a list and returns
     // true if all elements in the list satisfy the function
     all = func(condition, list)
-        if len(list) = 0 then
+        if len(list) is 0 then
             true
         else
             let
-                this = at(list, 0)
+                this = list[0]
             in
-                condition(this) and all(condition, tail(list))
+                condition(this) and all(condition, tail(list)),
 
     // takes a function and a list and returns a list
     // containing all the elements of the given list up to
@@ -22,27 +21,25 @@ let
     // unlike filter, takeWhile stops at the first element
     // that does not satisfy the function
     takeWhile = func(condition, list)
-        if equals(len(list), 0) then
+        if len(list) is 0 then
             []
         else
-            let this = at(list, 0) in
+            let this = list[0] in
                 if condition(this) then
                     prepend(this, takeWhile(condition, tail(list)))
                 else
                     [],
 
-    isFactor = func(n, x) 0 = mod(n, x),
+    isFactor = func(n, x) n % x is 0,
 
     // takes a number and returns true if it is prime
     isPrime = func(n)
-        if lessThan(n, 2) then
-            false
-        else if equals(n, 2) then
-            true
+        if n <= 2 then
+            n is 2
         else all(
-            func(x) not(isFactor(n, x)),
+            func(x) not isFactor(n, x),
             takeWhile(
-                func(x) not(greaterThan(x * x, n)),
+                func(x) not (x * x > n),
                 range(2, n - 1)
             )
         ),
@@ -53,11 +50,11 @@ let
     // unlike takeWhile, filter does not stop at the
     // first element that does not satisfy the function
     filter = func(f, l)
-        if equals(len(l), 0) then
+        if len(l) is 0 then
             []
         else
             let
-                this = at(l, 0),
+                this = l[0],
                 rest = filter(f, tail(l))
             in
                 if f(this) then
@@ -67,7 +64,7 @@ let
 
     // helper function for fib
     fibHelper = func(n, a, b)
-        if equals(n, 0) then
+        if n is 0 then
             a
         else
             fibHelper(n - 1, b, a + b),
@@ -80,12 +77,13 @@ let
     
     // variables
     lim = parseInt(input("Enter a limit: "))
-in if lessThan(lim, 0) then
+in if lim < 0 then
     "Limit must be non-negative"
-else if greaterThan(lim, 40) then
+else if lim > 40 then
     "Limit must be less than or equal to 40"
-else let fibs = firstNFibs(lim)
-in [
+else let
+        fibs = firstNFibs(lim)
+    in [
         "\n", "fibs:", fibs, "\n",
         "prime fibs:", filter(isPrime, fibs), "\n"
-]
+    ]

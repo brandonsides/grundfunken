@@ -154,6 +154,13 @@ var builtins = map[string]any{
 			return input, nil
 		},
 	},
+	"print": &BuiltinFunction{
+		Argc: 1,
+		Fn: func(args []any) (any, *models.InterpreterError) {
+			fmt.Println(args[0])
+			return nil, nil
+		},
+	},
 	"parseInt": &BuiltinFunction{
 		Argc: 1,
 		Fn: func(args []any) (any, *models.InterpreterError) {

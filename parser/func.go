@@ -60,6 +60,10 @@ func parseFunction(toks []tokens.Token) (exp models.Expression, rest []tokens.To
 	rest = rest[1:]
 	args := make([]string, 0)
 	for len(rest) > 0 {
+		if rest[0].Type == tokens.RIGHT_PAREN {
+			break
+		}
+
 		if rest[0].Type != tokens.IDENTIFIER {
 			return nil, rest, &models.InterpreterError{
 				Err:            errors.New("unexpected token"),

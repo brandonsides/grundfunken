@@ -1,4 +1,57 @@
 let
+// misc helpers
+    tail = func(l) if len(l) <= 1 then [] else l[1:],
+
+    fold = func(t, f, l)
+        if len(l) is 0 then
+            t
+        else
+            let
+                this = l[0],
+                rest = tail(l),
+                nextT = f(t, this)
+            in
+                fold(nextT, f, tail(l)),
+
+    splitHelper = func(string)
+        if lenStr(string) is 0 then {
+                first: "",
+                rest: ""
+            }
+        else
+            let this = atStr(string, 0),
+                rest = if lenStr(string) is 1 then
+                        ""
+                    else
+                        sliceStr(string, 1, -1)
+            in
+                if this is " " then {
+                        first: "",
+                        rest: rest
+                    }
+                else
+                    let splitRest = splitHelper(rest) in {
+                            first: concatStr(this, splitRest.first),
+                            rest: splitRest.rest
+                        },
+
+    // takes a string and returns a list of words in the string
+    split = func(string)
+        if lenStr(string) is 0 then
+            []
+        else let firstAndRest = splitHelper(string),
+                first = firstAndRest.first,
+                rest = firstAndRest.rest
+            in
+                prepend(first, split(rest)),
+    
+    // takes a list of strings, parses them as integers, and returns a list of the parsed integers
+    asNums = func(strings)
+        parseInt(string) for string in strings,
+    
+    forever = func(f)
+        [f(), forever(f)],
+
 // tree utils
     emptyTree = {
         val: false,
@@ -62,8 +115,15 @@ let
                 false
             else
                 bstFind(tree.right, val),
-    
-// sample tree
-    tree = bstPush(bstPush(bstPush(bstPush(emptyTree, 5), 3), 7), 1)
+
+    nums = asNums(split(input("Enter a list of numbers: "))),
+
+    tree = fold(emptyTree, bstPush, nums)
 in
-    [i, bstFind(tree, i)] for i in range(0, 10)
+    forever(
+        func()
+            let
+                numToFind = parseInt(input("Enter a number to find: "))
+            in
+                print(bstFind(tree, numToFind))
+    )
