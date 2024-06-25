@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"errors"
-
 	"github.com/brandonksides/grundfunken/models"
 )
 
@@ -20,7 +18,7 @@ func (fae *FieldAccessExpression) Evaluate(bindings models.Bindings) (any, *mode
 	objMap, ok := obj.(map[string]interface{})
 	if !ok {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("expected object"),
+			Message:        "expected object",
 			SourceLocation: fae.Object.SourceLocation(),
 		}
 	}
@@ -30,7 +28,7 @@ func (fae *FieldAccessExpression) Evaluate(bindings models.Bindings) (any, *mode
 	}
 
 	return nil, &models.InterpreterError{
-		Err:            errors.New("field not found"),
+		Message:        "field not found",
 		SourceLocation: fae.loc,
 	}
 }

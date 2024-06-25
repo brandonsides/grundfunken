@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
@@ -10,6 +10,33 @@ import (
 type FunctionExpression struct {
 	args []string
 	body models.Expression
+	loc  models.SourceLocation
+}
+
+type FuncValue struct {
+	Bindings models.Bindings
+	Exp      FunctionExpression
+}
+
+func (f FuncValue) Call(args []any) (any, error) {
+	if len(args) != len(f.Exp.args) {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("expected %d arguments, got %d", len(f.Exp.args), len(args)),
+			SourceLocation: f.Exp.loc,
+		}
+	}
+	newBindings := make(models.Bindings)
+	for k, v := range f.Bindings {
+		newBindings[k] = v
+	}
+	for i, arg := range f.Exp.args {
+		newBindings[arg] = args[i]
+	}
+	ret, err := f.Exp.body.Evaluate(newBindings)
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
 }
 
 func (fe *FunctionExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
@@ -19,27 +46,26 @@ func (fe *FunctionExpression) Evaluate(bindings models.Bindings) (any, *models.I
 		retBindings[k] = v
 	}
 
-	return &models.ExpFunction{
-		Args:     fe.args,
+	return &FuncValue{
+		Exp:      *fe,
 		Bindings: retBindings,
-		Exp:      fe.body,
 	}, nil
 }
 
 func (fe *FunctionExpression) SourceLocation() models.SourceLocation {
-	return fe.body.SourceLocation()
+	return fe.loc
 }
 
 func parseFunction(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
 	if len(toks) == 0 {
 		return nil, toks, &models.InterpreterError{
-			Err: errors.New("unexpected end of input"),
+			Message: "unexpected end of input",
 		}
 	}
 
 	if toks[0].Type != tokens.FUNC {
 		return nil, toks, &models.InterpreterError{
-			Err:            errors.New("unexpected token"),
+			Message:        "unexpected token",
 			SourceLocation: toks[0].SourceLocation,
 		}
 	}
@@ -47,13 +73,13 @@ func parseFunction(toks []tokens.Token) (exp models.Expression, rest []tokens.To
 	rest = toks[1:]
 	if len(rest) == 0 {
 		return nil, rest, &models.InterpreterError{
-			Err: errors.New("unexpected end of input"),
+			Message: "unexpected end of input",
 		}
 	}
 
 	if rest[0].Type != tokens.LEFT_PAREN {
 		return nil, rest, &models.InterpreterError{
-			Err:            errors.New("unexpected token"),
+			Message:        "unexpected token",
 			SourceLocation: rest[0].SourceLocation,
 		}
 	}
@@ -67,7 +93,7 @@ func parseFunction(toks []tokens.Token) (exp models.Expression, rest []tokens.To
 
 		if rest[0].Type != tokens.IDENTIFIER {
 			return nil, rest, &models.InterpreterError{
-				Err:            errors.New("unexpected token"),
+				Message:        "unexpected token",
 				SourceLocation: rest[0].SourceLocation,
 			}
 		}
@@ -76,7 +102,7 @@ func parseFunction(toks []tokens.Token) (exp models.Expression, rest []tokens.To
 		rest = rest[1:]
 		if len(rest) == 0 {
 			return nil, rest, &models.InterpreterError{
-				Err: errors.New("unexpected end of input"),
+				Message: "unexpected end of input",
 			}
 		}
 
@@ -86,7 +112,7 @@ func parseFunction(toks []tokens.Token) (exp models.Expression, rest []tokens.To
 
 		if rest[0].Type != tokens.COMMA {
 			return nil, rest, &models.InterpreterError{
-				Err:            errors.New("unexpected token"),
+				Message:        "unexpected token",
 				SourceLocation: rest[0].SourceLocation,
 			}
 		}
@@ -96,7 +122,7 @@ func parseFunction(toks []tokens.Token) (exp models.Expression, rest []tokens.To
 
 	if len(rest) == 0 {
 		return nil, rest, &models.InterpreterError{
-			Err: errors.New("unexpected end of input"),
+			Message: "unexpected end of input",
 		}
 	}
 
@@ -110,5 +136,6 @@ func parseFunction(toks []tokens.Token) (exp models.Expression, rest []tokens.To
 	return &FunctionExpression{
 		args: args,
 		body: exp,
+		loc:  toks[0].SourceLocation,
 	}, rest, nil
 }

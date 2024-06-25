@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"errors"
-
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -18,7 +16,7 @@ func parseExpressions(toks []tokens.Token) (exps []models.Expression, rest []tok
 		exps = append(exps, exp)
 		if len(rest) == 0 {
 			return nil, rest, &models.InterpreterError{
-				Err: errors.New("unexpected end of input"),
+				Message: "unexpected end of input",
 			}
 		}
 

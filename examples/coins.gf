@@ -1,7 +1,7 @@
 let
     // takes a list and returns everything after the first element
     tail = func(l)
-        if len(l) > 1 then l[1:] else [],
+        l[1:],
 
     // takes a list and returns all elements that meet the given condition
     filter = func(l, f)

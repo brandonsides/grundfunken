@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"errors"
-
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -33,13 +31,13 @@ func (ale *ArrayLiteralExpression) SourceLocation() models.SourceLocation {
 func parseArrayLiteral(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
 	if len(toks) == 0 {
 		return nil, toks, &models.InterpreterError{
-			Err: errors.New("unexpected end of input"),
+			Message: "unexpected end of input",
 		}
 	}
 
 	if toks[0].Type != tokens.LEFT_SQUARE_BRACKET {
 		return nil, toks, &models.InterpreterError{
-			Err:            errors.New("unexpected token"),
+			Message:        "unexpected token",
 			SourceLocation: toks[0].SourceLocation,
 		}
 	}
@@ -51,7 +49,7 @@ func parseArrayLiteral(toks []tokens.Token) (exp models.Expression, rest []token
 	}
 	if rest[0].Type != tokens.RIGHT_SQUARE_BRACKET {
 		return nil, rest, &models.InterpreterError{
-			Err:            errors.New("unexpected token"),
+			Message:        "unexpected token",
 			SourceLocation: rest[0].SourceLocation,
 		}
 	}

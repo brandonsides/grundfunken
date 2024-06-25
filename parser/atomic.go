@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/brandonksides/grundfunken/models"
@@ -12,7 +10,7 @@ import (
 func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
 	if len(toks) == 0 {
 		return nil, toks, &models.InterpreterError{
-			Err: errors.New("expected token"),
+			Message: "expected token",
 		}
 	}
 
@@ -27,12 +25,12 @@ func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Toke
 		}
 		if len(rest) == 0 {
 			return nil, rest, &models.InterpreterError{
-				Err: errors.New("expected closing parenthesis"),
+				Message: "expected closing parenthesis",
 			}
 		}
 		if rest[0].Type != tokens.RIGHT_PAREN {
 			return nil, rest, &models.InterpreterError{
-				Err:            errors.New("expected closing parenthesis"),
+				Message:        "expected closing parenthesis",
 				SourceLocation: rest[0].SourceLocation,
 			}
 		}
@@ -44,7 +42,7 @@ func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Toke
 			rest = toks[1:]
 			if len(rest) == 0 {
 				return nil, rest, &models.InterpreterError{
-					Err: errors.New("unexpected end of input"),
+					Message: "unexpected end of input",
 				}
 			}
 
@@ -53,7 +51,7 @@ func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Toke
 
 		if rest[0].Type != tokens.NUMBER {
 			return nil, rest, &models.InterpreterError{
-				Err:            errors.New("unexpected token"),
+				Message:        "unexpected token",
 				SourceLocation: rest[0].SourceLocation,
 			}
 		}
@@ -64,7 +62,8 @@ func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Toke
 		ret, innerErr := strconv.Atoi(numStr)
 		if innerErr != nil {
 			return nil, toks[1:], &models.InterpreterError{
-				Err:            fmt.Errorf("failed to parse number literal: %w", innerErr),
+				Message:        "failed to parse number literal",
+				Underlying:     innerErr,
 				SourceLocation: toks[0].SourceLocation,
 			}
 		}
@@ -123,7 +122,7 @@ func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Toke
 			}
 			if rest[0].Type != tokens.RIGHT_PAREN {
 				return nil, rest, &models.InterpreterError{
-					Err:            errors.New("unexpected token"),
+					Message:        "unexpected token",
 					SourceLocation: rest[0].SourceLocation,
 				}
 			}
@@ -131,10 +130,7 @@ func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Toke
 			exp = &FunctionCallExpression{
 				Function: exp,
 				Args:     exps,
-				loc: models.SourceLocation{
-					LineNumber:   exp.SourceLocation().LineNumber,
-					ColumnNumber: exp.SourceLocation().ColumnNumber,
-				},
+				loc:      toks[0].SourceLocation,
 			}
 		case tokens.LEFT_SQUARE_BRACKET:
 			exp, rest, err = parseArrayIndex(exp, rest)
@@ -143,12 +139,12 @@ func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Toke
 			}
 			if len(rest) == 0 {
 				return nil, rest, &models.InterpreterError{
-					Err: errors.New("unexpected end of input"),
+					Message: "unexpected end of input",
 				}
 			}
 			if rest[0].Type != tokens.RIGHT_SQUARE_BRACKET {
 				return nil, rest, &models.InterpreterError{
-					Err:            errors.New("unexpected token"),
+					Message:        "unexpected token",
 					SourceLocation: rest[0].SourceLocation,
 				}
 			}
@@ -156,12 +152,12 @@ func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Toke
 		case tokens.DOT:
 			if len(rest) == 0 {
 				return nil, rest, &models.InterpreterError{
-					Err: errors.New("unexpected end of input"),
+					Message: "unexpected end of input",
 				}
 			}
 			if rest[0].Type != tokens.IDENTIFIER {
 				return nil, rest, &models.InterpreterError{
-					Err:            errors.New("unexpected token"),
+					Message:        "unexpected token",
 					SourceLocation: rest[0].SourceLocation,
 				}
 			}

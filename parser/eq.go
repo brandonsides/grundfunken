@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"errors"
-
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -43,7 +41,7 @@ func (ee *EqExpression) Evaluate(bindings models.Bindings) (any, *models.Interpr
 		return v1 != v2, nil
 	default:
 		return nil, &models.InterpreterError{
-			Err:            errors.New("invalid operator"),
+			Message:        "invalid operator",
 			SourceLocation: ee.Op.SourceLocation,
 		}
 	}
@@ -93,7 +91,7 @@ func foldEq(first models.Expression, toks []tokens.Token) (exp models.Expression
 func parseEqOp(toks []tokens.Token) (op *EqOp, rest []tokens.Token, err *models.InterpreterError) {
 	if len(toks) == 0 {
 		return nil, toks, &models.InterpreterError{
-			Err: errors.New("unexpected end of input"),
+			Message: "unexpected end of input",
 		}
 	}
 
@@ -104,7 +102,7 @@ func parseEqOp(toks []tokens.Token) (op *EqOp, rest []tokens.Token, err *models.
 
 	if len(rest) == 0 {
 		return nil, rest, &models.InterpreterError{
-			Err: errors.New("unexpected end of input"),
+			Message: "unexpected end of input",
 		}
 	}
 

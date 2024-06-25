@@ -130,7 +130,7 @@ func tokenizeLine(line string, lineNumber int) ([]Token, *models.InterpreterErro
 			strTok, length, err := tokenizeString(line[col:])
 			if err != nil {
 				return nil, &models.InterpreterError{
-					Err: err,
+					Underlying: err,
 					SourceLocation: models.SourceLocation{
 						LineNumber:   lineNumber,
 						ColumnNumber: col + length,
@@ -147,7 +147,7 @@ func tokenizeLine(line string, lineNumber int) ([]Token, *models.InterpreterErro
 			numTok, length, err := tokenizeNumber(line[col:])
 			if err != nil {
 				return nil, &models.InterpreterError{
-					Err: err,
+					Underlying: err,
 					SourceLocation: models.SourceLocation{
 						LineNumber:   lineNumber,
 						ColumnNumber: col + length,
@@ -164,7 +164,7 @@ func tokenizeLine(line string, lineNumber int) ([]Token, *models.InterpreterErro
 			idTok, length, err := tokenizeOther(line[col:])
 			if err != nil {
 				return nil, &models.InterpreterError{
-					Err: err,
+					Underlying: err,
 					SourceLocation: models.SourceLocation{
 						LineNumber:   lineNumber,
 						ColumnNumber: col + length,
@@ -179,7 +179,7 @@ func tokenizeLine(line string, lineNumber int) ([]Token, *models.InterpreterErro
 			toks = append(toks, idTok)
 		} else {
 			return nil, &models.InterpreterError{
-				Err: fmt.Errorf("unexpected character %c", char),
+				Underlying: fmt.Errorf("unexpected character %c", char),
 				SourceLocation: models.SourceLocation{
 					LineNumber:   lineNumber,
 					ColumnNumber: col,

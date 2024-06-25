@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
@@ -21,7 +21,7 @@ func (me *MulExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	v1Muller, ok := v1.(int)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("operator '*' cannot be applied to first operand"),
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to first operand", me.op.Value),
 			SourceLocation: me.first.SourceLocation(),
 		}
 	}
@@ -33,7 +33,7 @@ func (me *MulExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	v2Muller, ok := v2.(int)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("operator '*' cannot be applied to second operand"),
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to second operand", me.op.Value),
 			SourceLocation: me.second.SourceLocation(),
 		}
 	}
@@ -47,7 +47,7 @@ func (me *MulExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		return v1Muller % v2Muller, nil
 	default:
 		return nil, &models.InterpreterError{
-			Err:            errors.New("invalid operator"),
+			Message:        "invalid operator",
 			SourceLocation: me.op.SourceLocation,
 		}
 	}

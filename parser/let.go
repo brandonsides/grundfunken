@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"errors"
-
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -33,7 +31,7 @@ func (le *LetExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 
 		newBindings[k] = val
 
-		if funcVal, ok := val.(*models.ExpFunction); ok {
+		if funcVal, ok := val.(*FuncValue); ok {
 			funcVal.Bindings[k] = val
 		}
 	}
@@ -48,13 +46,13 @@ func (le *LetExpression) SourceLocation() models.SourceLocation {
 func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
 	if len(toks) < 3 {
 		return nil, toks, &models.InterpreterError{
-			Err: errors.New("unexpected end of input"),
+			Message: "unexpected end of input",
 		}
 	}
 
 	if toks[0].Type != tokens.LET {
 		return nil, toks, &models.InterpreterError{
-			Err:            errors.New("unexpected token"),
+			Message:        "unexpected token",
 			SourceLocation: toks[0].SourceLocation,
 		}
 	}
@@ -65,7 +63,7 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 	for len(rest) > 0 {
 		if rest[0].Type != tokens.IDENTIFIER {
 			return nil, rest, &models.InterpreterError{
-				Err:            errors.New("unexpected token"),
+				Message:        "unexpected token",
 				SourceLocation: rest[0].SourceLocation,
 			}
 		}
@@ -75,7 +73,7 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 
 		if rest[0].Type != tokens.EQUAL {
 			return nil, rest, &models.InterpreterError{
-				Err:            errors.New("unexpected token"),
+				Message:        "unexpected token",
 				SourceLocation: rest[0].SourceLocation,
 			}
 		}
@@ -84,7 +82,7 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 
 		if len(rest) == 0 {
 			return nil, rest, &models.InterpreterError{
-				Err: errors.New("unexpected end of input"),
+				Message: "unexpected end of input",
 			}
 		}
 
@@ -101,7 +99,7 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 
 		if len(rest) == 0 {
 			return nil, rest, &models.InterpreterError{
-				Err: errors.New("unexpected end of input"),
+				Message: "unexpected end of input",
 			}
 		}
 
@@ -114,13 +112,13 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 
 	if len(rest) == 0 {
 		return nil, rest, &models.InterpreterError{
-			Err: errors.New("unexpected end of input"),
+			Message: "unexpected end of input",
 		}
 	}
 
 	if rest[0].Type != tokens.IN {
 		return nil, rest, &models.InterpreterError{
-			Err:            errors.New("unexpected token"),
+			Message:        "unexpected token",
 			SourceLocation: rest[0].SourceLocation,
 		}
 	}

@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"errors"
-
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -43,7 +41,7 @@ func (ce *CmpExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		v1Int, ok := v1.(int)
 		if !ok {
 			return nil, &models.InterpreterError{
-				Err:            errors.New("expected int"),
+				Message:        "expected int",
 				SourceLocation: ce.first.SourceLocation(),
 			}
 		}
@@ -51,7 +49,7 @@ func (ce *CmpExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		v2Int, ok := v2.(int)
 		if !ok {
 			return nil, &models.InterpreterError{
-				Err:            errors.New("expected int"),
+				Message:        "expected int",
 				SourceLocation: ce.second.SourceLocation(),
 			}
 		}
@@ -61,7 +59,7 @@ func (ce *CmpExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		v1Int, ok := v1.(int)
 		if !ok {
 			return nil, &models.InterpreterError{
-				Err:            errors.New("expected int"),
+				Message:        "expected int",
 				SourceLocation: ce.first.SourceLocation(),
 			}
 		}
@@ -69,7 +67,7 @@ func (ce *CmpExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		v2Int, ok := v2.(int)
 		if !ok {
 			return nil, &models.InterpreterError{
-				Err:            errors.New("expected int"),
+				Message:        "expected int",
 				SourceLocation: ce.second.SourceLocation(),
 			}
 		}
@@ -79,7 +77,7 @@ func (ce *CmpExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		v1Int, ok := v1.(int)
 		if !ok {
 			return nil, &models.InterpreterError{
-				Err:            errors.New("expected int"),
+				Message:        "expected int",
 				SourceLocation: ce.first.SourceLocation(),
 			}
 		}
@@ -87,7 +85,7 @@ func (ce *CmpExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		v2Int, ok := v2.(int)
 		if !ok {
 			return nil, &models.InterpreterError{
-				Err:            errors.New("expected int"),
+				Message:        "expected int",
 				SourceLocation: ce.second.SourceLocation(),
 			}
 		}
@@ -97,7 +95,7 @@ func (ce *CmpExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		v1Int, ok := v1.(int)
 		if !ok {
 			return nil, &models.InterpreterError{
-				Err:            errors.New("expected int"),
+				Message:        "expected int",
 				SourceLocation: ce.first.SourceLocation(),
 			}
 		}
@@ -105,7 +103,7 @@ func (ce *CmpExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		v2Int, ok := v2.(int)
 		if !ok {
 			return nil, &models.InterpreterError{
-				Err:            errors.New("expected int"),
+				Message:        "expected int",
 				SourceLocation: ce.second.SourceLocation(),
 			}
 		}
@@ -113,7 +111,7 @@ func (ce *CmpExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		return v1Int > v2Int, nil
 	default:
 		return nil, &models.InterpreterError{
-			Err:            errors.New("invalid operator"),
+			Message:        "invalid operator",
 			SourceLocation: ce.op.SourceLocation,
 		}
 	}
@@ -145,7 +143,7 @@ func foldCmp(first models.Expression, toks []tokens.Token) (exp models.Expressio
 	case tokens.LEFT_ANGLE_BRACKET:
 		if len(toks) == 1 {
 			return nil, toks, &models.InterpreterError{
-				Err: errors.New("unexpected end of input"),
+				Message: "unexpected end of input",
 			}
 		}
 		next := toks[1]
@@ -159,7 +157,7 @@ func foldCmp(first models.Expression, toks []tokens.Token) (exp models.Expressio
 	case tokens.RIGHT_ANGLE_BRACKET:
 		if len(toks) == 1 {
 			return nil, toks, &models.InterpreterError{
-				Err: errors.New("unexpected end of input"),
+				Message: "unexpected end of input",
 			}
 		}
 		next := toks[1]

@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"errors"
-
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -21,7 +19,7 @@ func (aae *ArrayAccessExpression) Evaluate(bindings models.Bindings) (any, *mode
 	arrSlice, ok := arr.([]interface{})
 	if !ok {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("expected array"),
+			Message:        "expected array",
 			SourceLocation: aae.Array.SourceLocation(),
 		}
 	}
@@ -33,14 +31,14 @@ func (aae *ArrayAccessExpression) Evaluate(bindings models.Bindings) (any, *mode
 	indexInt, ok := index.(int)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("expected int"),
+			Message:        "expected int",
 			SourceLocation: aae.Index.SourceLocation(),
 		}
 	}
 
 	if indexInt < 0 || indexInt >= len(arrSlice) {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("index out of bounds"),
+			Message:        "index out of bounds",
 			SourceLocation: aae.Index.SourceLocation(),
 		}
 	}
@@ -67,7 +65,7 @@ func (ase *ArraySliceExpression) Evaluate(bindings models.Bindings) (any, *model
 	arrSlice, ok := arr.([]interface{})
 	if !ok {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("expected array"),
+			Message:        "expected array",
 			SourceLocation: ase.Array.SourceLocation(),
 		}
 	}
@@ -81,7 +79,7 @@ func (ase *ArraySliceExpression) Evaluate(bindings models.Bindings) (any, *model
 		beginInt, ok = begin.(int)
 		if !ok {
 			return nil, &models.InterpreterError{
-				Err:            errors.New("expected int"),
+				Message:        "expected int",
 				SourceLocation: (*ase.Begin).SourceLocation(),
 			}
 		}
@@ -96,7 +94,7 @@ func (ase *ArraySliceExpression) Evaluate(bindings models.Bindings) (any, *model
 		endInt, ok = end.(int)
 		if !ok {
 			return nil, &models.InterpreterError{
-				Err:            errors.New("expected int"),
+				Message:        "expected int",
 				SourceLocation: (*ase.End).SourceLocation(),
 			}
 		}
@@ -104,21 +102,21 @@ func (ase *ArraySliceExpression) Evaluate(bindings models.Bindings) (any, *model
 
 	if beginInt < 0 || beginInt >= len(arrSlice) {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("begin index out of bounds"),
+			Message:        "begin index out of bounds",
 			SourceLocation: (*ase.Begin).SourceLocation(),
 		}
 	}
 
 	if endInt < 0 || endInt > len(arrSlice) {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("end index out of bounds"),
+			Message:        "end index out of bounds",
 			SourceLocation: (*ase.End).SourceLocation(),
 		}
 	}
 
 	if beginInt > endInt {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("begin index greater than end index"),
+			Message:        "begin index greater than end index",
 			SourceLocation: ase.SourceLocation(),
 		}
 	}
@@ -133,7 +131,7 @@ func (ase *ArraySliceExpression) SourceLocation() models.SourceLocation {
 func parseArrayIndex(arr models.Expression, toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
 	if len(toks) == 0 {
 		return nil, toks, &models.InterpreterError{
-			Err: errors.New("expected token"),
+			Message: "expected token",
 		}
 	}
 
@@ -150,7 +148,7 @@ func parseArrayIndex(arr models.Expression, toks []tokens.Token) (exp models.Exp
 
 	if len(rest) == 0 {
 		return nil, rest, &models.InterpreterError{
-			Err: errors.New("unexpected end of input"),
+			Message: "unexpected end of input",
 		}
 	}
 
@@ -159,7 +157,7 @@ func parseArrayIndex(arr models.Expression, toks []tokens.Token) (exp models.Exp
 
 		if len(rest) == 0 {
 			return nil, rest, &models.InterpreterError{
-				Err: errors.New("unexpected end of input"),
+				Message: "unexpected end of input",
 			}
 		}
 

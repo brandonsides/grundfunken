@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"errors"
-
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -23,7 +21,7 @@ func (ie *IfExpression) Evaluate(bindings models.Bindings) (any, *models.Interpr
 	condBool, ok := cond.(bool)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("if condition must evaluate to a boolean"),
+			Message:        "if condition must evaluate to a boolean",
 			SourceLocation: ie.Condition.SourceLocation(),
 		}
 	}
@@ -42,13 +40,13 @@ func (ie *IfExpression) SourceLocation() models.SourceLocation {
 func parseIfExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
 	if len(toks) == 0 {
 		return nil, toks, &models.InterpreterError{
-			Err: errors.New("unexpected end of input"),
+			Message: "unexpected end of input",
 		}
 	}
 
 	if toks[0].Type != tokens.IF {
 		return nil, toks, &models.InterpreterError{
-			Err:            errors.New("unexpected token"),
+			Message:        "unexpected token",
 			SourceLocation: toks[0].SourceLocation,
 		}
 	}
@@ -61,13 +59,13 @@ func parseIfExpression(toks []tokens.Token) (exp models.Expression, rest []token
 
 	if len(rest) == 0 {
 		return nil, rest, &models.InterpreterError{
-			Err: errors.New("unexpected end of input"),
+			Message: "unexpected end of input",
 		}
 	}
 
 	if rest[0].Type != tokens.THEN {
 		return nil, rest, &models.InterpreterError{
-			Err:            errors.New("unexpected token"),
+			Message:        "unexpected token",
 			SourceLocation: rest[0].SourceLocation,
 		}
 	}
@@ -80,13 +78,13 @@ func parseIfExpression(toks []tokens.Token) (exp models.Expression, rest []token
 
 	if len(rest) == 0 {
 		return nil, rest, &models.InterpreterError{
-			Err: errors.New("unexpected end of input"),
+			Message: "unexpected end of input",
 		}
 	}
 
 	if rest[0].Type != tokens.ELSE {
 		return nil, rest, &models.InterpreterError{
-			Err:            errors.New("unexpected token"),
+			Message:        "unexpected token",
 			SourceLocation: rest[0].SourceLocation,
 		}
 	}

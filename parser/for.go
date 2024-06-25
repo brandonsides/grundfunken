@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"errors"
-
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -30,7 +28,7 @@ func (fe *ForExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	iterableExpArr, ok := iterableExp.([]any)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("for expression must evaluate to an array"),
+			Message:        "for expression must evaluate to an array",
 			SourceLocation: fe.InClause.SourceLocation(),
 		}
 	}
@@ -64,7 +62,7 @@ func parseForExpression(exp1 models.Expression, toks []tokens.Token) (exp models
 	rest = toks[1:]
 	if len(rest) == 0 {
 		return nil, rest, &models.InterpreterError{
-			Err: errors.New("unexpected end of input"),
+			Message: "unexpected end of input",
 		}
 	}
 
@@ -72,13 +70,13 @@ func parseForExpression(exp1 models.Expression, toks []tokens.Token) (exp models
 	rest = rest[1:]
 	if len(rest) == 0 {
 		return nil, rest, &models.InterpreterError{
-			Err: errors.New("unexpected end of input"),
+			Message: "unexpected end of input",
 		}
 	}
 
 	if rest[0].Type != tokens.IN {
 		return nil, rest, &models.InterpreterError{
-			Err:            errors.New("unexpected token"),
+			Message:        "unexpected token",
 			SourceLocation: rest[0].SourceLocation,
 		}
 	}

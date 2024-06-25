@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"errors"
-
 	"github.com/brandonksides/grundfunken/models"
 )
 
@@ -15,7 +13,7 @@ func (ie *IdentifierExpression) Evaluate(bindings models.Bindings) (any, *models
 	ret, ok := map[string]any(bindings)[ie.name]
 	if !ok {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("cannot evaluate unbound identifier"),
+			Message:        "cannot evaluate unbound identifier",
 			SourceLocation: ie.loc,
 		}
 	}

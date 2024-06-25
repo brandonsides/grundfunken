@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -12,12 +11,6 @@ import (
 	"github.com/brandonksides/grundfunken/parser"
 	"github.com/brandonksides/grundfunken/tokens"
 )
-
-type logger struct{}
-
-func (l logger) Errorf(err models.InterpreterError) {
-	fmt.Println(err.Error())
-}
 
 func main() {
 	var inputFilePath string
@@ -50,7 +43,7 @@ func main() {
 
 	result, err := interpret(lines)
 	if err != nil {
-		report(*err, lines)
+		report(err, lines)
 		return
 	}
 
@@ -76,7 +69,7 @@ func interpret(lines []string) (any, *models.InterpreterError) {
 
 	if len(rest) != 0 {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("unexpected token"),
+			Message:        "unexpected token",
 			SourceLocation: rest[0].SourceLocation,
 		}
 	}
@@ -87,10 +80,26 @@ func interpret(lines []string) (any, *models.InterpreterError) {
 	return expression.Evaluate(builtins)
 }
 
-func report(err models.InterpreterError, lines []string) {
-	fmt.Println(err.Error())
-	fmt.Println(lines[err.SourceLocation.LineNumber])
-	fmt.Println(underlineError(err.SourceLocation.ColumnNumber))
+func report(err error, lines []string) {
+	fmt.Print("Error: ")
+	reportHelper(err, lines)
+}
+
+func reportHelper(err error, lines []string) {
+	interpreterErr, ok := err.(*models.InterpreterError)
+	if !ok {
+		fmt.Println(err.Error())
+		fmt.Println()
+		return
+	}
+
+	if interpreterErr.Underlying != nil {
+		reportHelper(interpreterErr.Underlying, lines)
+	}
+
+	fmt.Println(interpreterErr.Error())
+	fmt.Println(lines[interpreterErr.SourceLocation.LineNumber])
+	fmt.Println(underlineError(interpreterErr.SourceLocation.ColumnNumber))
 }
 
 func underlineError(col int) string {

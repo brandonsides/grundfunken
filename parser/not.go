@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"errors"
-
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -20,7 +18,7 @@ func (ne *NotExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	vBool, ok := v.(bool)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("expected bool"),
+			Message:        "expected bool",
 			SourceLocation: ne.Inner.SourceLocation(),
 		}
 	}
@@ -35,7 +33,7 @@ func (ne *NotExpression) SourceLocation() models.SourceLocation {
 func parseNotExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
 	if len(toks) == 0 {
 		return nil, toks, &models.InterpreterError{
-			Err: errors.New("expected token"),
+			Message: "expected token",
 		}
 	}
 

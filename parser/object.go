@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"errors"
-
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -31,14 +29,14 @@ func (ole *ObjectLiteralExpression) SourceLocation() models.SourceLocation {
 func parseObjectLiteralExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
 	if len(toks) < 2 {
 		return nil, toks, &models.InterpreterError{
-			Err:            errors.New("unexpected end of input"),
+			Message:        "unexpected end of input",
 			SourceLocation: toks[0].SourceLocation,
 		}
 	}
 
 	if toks[0].Type != tokens.LEFT_SQUIGGLY_BRACKET {
 		return nil, toks, &models.InterpreterError{
-			Err:            errors.New("unexpected token"),
+			Message:        "unexpected token",
 			SourceLocation: toks[0].SourceLocation,
 		}
 	}
@@ -48,7 +46,7 @@ func parseObjectLiteralExpression(toks []tokens.Token) (exp models.Expression, r
 	for {
 		if len(rest) == 0 {
 			return nil, toks, &models.InterpreterError{
-				Err:            errors.New("unexpected end of input"),
+				Message:        "unexpected end of input",
 				SourceLocation: toks[0].SourceLocation,
 			}
 		}
@@ -65,14 +63,14 @@ func parseObjectLiteralExpression(toks []tokens.Token) (exp models.Expression, r
 
 		if len(rest) == 0 {
 			return nil, toks, &models.InterpreterError{
-				Err:            errors.New("unexpected end of input"),
+				Message:        "unexpected end of input",
 				SourceLocation: toks[0].SourceLocation,
 			}
 		}
 
 		if rest[0].Type != tokens.COLON {
 			return nil, toks, &models.InterpreterError{
-				Err:            errors.New("unexpected token"),
+				Message:        "unexpected token",
 				SourceLocation: rest[0].SourceLocation,
 			}
 		}
@@ -80,7 +78,7 @@ func parseObjectLiteralExpression(toks []tokens.Token) (exp models.Expression, r
 
 		if len(rest) == 0 {
 			return nil, toks, &models.InterpreterError{
-				Err: errors.New("unexpected end of input"),
+				Message: "unexpected end of input",
 			}
 		}
 
@@ -94,7 +92,7 @@ func parseObjectLiteralExpression(toks []tokens.Token) (exp models.Expression, r
 
 		if len(rest) == 0 {
 			return nil, toks, &models.InterpreterError{
-				Err: errors.New("unexpected end of input"),
+				Message: "unexpected end of input",
 			}
 		}
 
@@ -107,13 +105,13 @@ func parseObjectLiteralExpression(toks []tokens.Token) (exp models.Expression, r
 
 	if len(rest) == 0 {
 		return nil, toks, &models.InterpreterError{
-			Err: errors.New("unexpected end of input"),
+			Message: "unexpected end of input",
 		}
 	}
 
 	if rest[0].Type != tokens.RIGHT_SQUIGGLY_BRACKET {
 		return nil, toks, &models.InterpreterError{
-			Err:            errors.New("unexpected token"),
+			Message:        "unexpected token",
 			SourceLocation: rest[0].SourceLocation,
 		}
 	}

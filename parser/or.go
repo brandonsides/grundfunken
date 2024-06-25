@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"errors"
-
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -20,7 +18,7 @@ func (oe *OrExpression) Evaluate(bindings models.Bindings) (any, *models.Interpr
 	v1Bool, ok := v1.(bool)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("expected bool"),
+			Message:        "expected bool",
 			SourceLocation: oe.Left.SourceLocation(),
 		}
 	}
@@ -36,7 +34,7 @@ func (oe *OrExpression) Evaluate(bindings models.Bindings) (any, *models.Interpr
 	v2Bool, ok := v2.(bool)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("expected bool"),
+			Message:        "expected bool",
 			SourceLocation: oe.Right.SourceLocation(),
 		}
 	}

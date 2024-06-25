@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
 )
@@ -21,7 +21,7 @@ func (fce *FunctionCallExpression) Evaluate(bindings models.Bindings) (any, *mod
 	fun, ok := f.(models.Function)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Err:            errors.New("cannot call non-function"),
+			Message:        "cannot call non-function",
 			SourceLocation: fce.Function.SourceLocation(),
 		}
 	}
@@ -36,7 +36,19 @@ func (fce *FunctionCallExpression) Evaluate(bindings models.Bindings) (any, *mod
 		argArray[i] = val
 	}
 
-	return fun.Call(argArray)
+	ret, innerErr := fun.Call(argArray)
+	if innerErr != nil {
+		msg := "in call to anonymous function"
+		if identifierExpression, ok := fce.Function.(*IdentifierExpression); ok {
+			msg = fmt.Sprintf("in call to function \"%s\"", identifierExpression.name)
+		}
+		return nil, &models.InterpreterError{
+			Message:        msg,
+			Underlying:     innerErr,
+			SourceLocation: fce.SourceLocation(),
+		}
+	}
+	return ret, nil
 }
 
 func (fce *FunctionCallExpression) SourceLocation() models.SourceLocation {

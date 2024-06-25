@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
@@ -22,7 +21,7 @@ func (ae *AddExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	v1Adder, ok := v1.(int)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Err:            fmt.Errorf("operator '%s' cannot be applied to first operand", ae.op.Value),
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to first operand", ae.op.Value),
 			SourceLocation: ae.first.SourceLocation(),
 		}
 	}
@@ -34,7 +33,7 @@ func (ae *AddExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	v2Adder, ok := v2.(int)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Err:            fmt.Errorf("operator '%s' cannot be applied to second operand", ae.op.Value),
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to second operand", ae.op.Value),
 			SourceLocation: ae.second.SourceLocation(),
 		}
 	}
@@ -46,7 +45,7 @@ func (ae *AddExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		return v1Adder - v2Adder, nil
 	default:
 		return nil, &models.InterpreterError{
-			Err:            errors.New("invalid operator"),
+			Message:        "invalid operator",
 			SourceLocation: ae.op.SourceLocation,
 		}
 	}
