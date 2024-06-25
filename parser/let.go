@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -44,7 +46,7 @@ func (le *LetExpression) SourceLocation() models.SourceLocation {
 }
 
 func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) < 3 {
+	if len(toks) < 1 {
 		return nil, toks, &models.InterpreterError{
 			Message: "unexpected end of input",
 		}
@@ -57,6 +59,12 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 		}
 	}
 
+	if len(rest) == 1 {
+		return nil, toks, &models.InterpreterError{
+			Message:        "expected identifier after \"let\"",
+			SourceLocation: toks[0].SourceLocation,
+		}
+	}
 	rest = toks[1:]
 
 	bindingExpressions := make([]BindingExpression, 0)
@@ -78,13 +86,13 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 			}
 		}
 
-		rest = rest[1:]
-
-		if len(rest) == 0 {
+		if len(rest) == 1 {
 			return nil, rest, &models.InterpreterError{
-				Message: "unexpected end of input",
+				Message:        fmt.Sprintf("expected expression after \"%s\"", rest[0].Value),
+				SourceLocation: rest[0].SourceLocation,
 			}
 		}
+		rest = rest[1:]
 
 		var exp1 models.Expression
 		exp1, rest, err = ParseExpression(rest)
@@ -99,7 +107,8 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 
 		if len(rest) == 0 {
 			return nil, rest, &models.InterpreterError{
-				Message: "unexpected end of input",
+				Message:        "expected in clause or binding clause after binding expression",
+				SourceLocation: exp1.SourceLocation(),
 			}
 		}
 
@@ -107,13 +116,13 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 			break
 		}
 
-		rest = rest[1:]
-	}
-
-	if len(rest) == 0 {
-		return nil, rest, &models.InterpreterError{
-			Message: "unexpected end of input",
+		if len(rest) == 1 {
+			return nil, rest, &models.InterpreterError{
+				Message:        "expected binding clause after comma",
+				SourceLocation: rest[0].SourceLocation,
+			}
 		}
+		rest = rest[1:]
 	}
 
 	if rest[0].Type != tokens.IN {
@@ -123,7 +132,13 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 		}
 	}
 
+	if len(rest) == 1 {
+		return nil, rest, &models.InterpreterError{
+			Message: "expected expression after \"in\"",
+		}
+	}
 	rest = rest[1:]
+
 	exp2, rest, err := ParseExpression(rest)
 	if err != nil {
 		return nil, rest, err

@@ -107,13 +107,15 @@ let
         else
             "?",
 
-    mazeRowString = func(mazeRow, visitedRow)
+    mazeRowString = func(mazeRow, visitedRow, curX)
         let
             isVisited = func(x) visitedRow[x] is not false
         in
             concatAll((
                 let
-                    tileStr = if isVisited(x) then
+                    tileStr = if x is curX then
+                        "-"
+                    else if mazeRow[x] is TILE_TYPE_EMPTY and isVisited(x) then
                         itoa(len(visitedRow[x]))
                     else
                         mazeTileString(mazeRow[x])
@@ -123,9 +125,9 @@ let
                     ))
             ) for x in range(0, len(mazeRow))),
 
-    mazeString = func(maze, visited)
+    mazeString = func(maze, visited, curX, curY)
         concatAll(
-            concatStr(mazeRowString(maze[i], visited[i]), "\n") for i in range(0, len(maze))
+            concatStr(mazeRowString(maze[i], visited[i], if i is curY then curX else false), "\n\n") for i in range(0, len(maze))
         ),
     
     mazeRowWithCoordAs = func(mazeRow, x, tile)
@@ -197,8 +199,9 @@ let
                     visited
                 else
                     let 
-                        _ = print(concatStr("\n", mazeString(maze, visited))),
-                        _ = input("press enter to continue")
+                        _ = print(concatStr("\n", mazeString(maze, visited, x, y))),
+                        // _ = input("press enter to continue")
+                        _ = sleep(20)
                     in
                         if tile is TILE_TYPE_END then
                             withNewBestPath
@@ -213,6 +216,39 @@ let
     
     noneVisited = func(maze) (false for _ in mazeRow) for mazeRow in maze,
 
+    drawFinishedMazeHelper = func(maze, coords, path)
+        let
+            dottedMaze = withIdxAs(maze, coords.y, withIdxAs(maze[coords.y], coords.x, "."))
+        in
+            if len(path) is 0 then
+                dottedMaze
+            else
+                let
+                    newCoords = if path[0] is DIR_LEFT then {
+                        x: coords.x - 1,
+                        y: coords.y
+                    } else if path[0] is DIR_UP then {
+                        x: coords.x,
+                        y: coords.y - 1
+                    } else if path[0] is DIR_RIGHT then {
+                        x: coords.x + 1,
+                        y: coords.y
+                    } else if path[0] is DIR_DOWN then {
+                        x: coords.x,
+                        y: coords.y + 1
+                    } else false
+                in
+                    if newCoords is false then [] else drawFinishedMazeHelper(dottedMaze, newCoords, tail(path)),
+
+    drawFinishedMaze = func(maze, path)
+        let rawMaze = (mazeTileString(tile) for tile in row) for row in maze,
+            coords = findStart(maze)
+        in
+            concatAll(
+                concatAll(
+                    append(rowStrs, "\n")
+                ) for rowStrs in drawFinishedMazeHelper(rawMaze, coords, path)),
+
     solveMaze = func(maze)
         let
             startCoords = findStart(maze),
@@ -223,14 +259,17 @@ let
 
     // maze
     defaultMaze = [
-        [1, 0, 0, 2, 0, 0],
-        [1, 0, 1, 1, 1, 0],
-        [1, 0, 1, 3, 1, 0],
-        [1, 0, 1, 0, 1, 0],
-        [1, 0, 1, 0, 0, 0],
-        [0, 0, 1, 0, 1, 0],
-        [0, 1, 0, 0, 1, 0],
-        [0, 0, 0, 1, 1, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 2, 1, 0, 1, 0, 1, 0, 0, 0, 1],
+        [0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+        [0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
+        [1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1],
+        [0, 0, 0, 0, 1, 0, 1, 0, 1, 3, 0, 0],
+        [1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1],
+        [0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
     ],
     
     res = solveMaze(defaultMaze)
@@ -238,4 +277,4 @@ in
     if res is false then
         false
     else
-        dirString(dir) for dir in res
+        concatStr("\n", drawFinishedMaze(defaultMaze, res))
