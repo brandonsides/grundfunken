@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/brandonksides/grundfunken/models"
 )
 
@@ -18,7 +20,7 @@ func (fae *FieldAccessExpression) Evaluate(bindings models.Bindings) (any, *mode
 	objMap, ok := obj.(map[string]interface{})
 	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        "expected object",
+			Message:        fmt.Sprintf("expected object; got %v", obj),
 			SourceLocation: fae.Object.SourceLocation(),
 		}
 	}

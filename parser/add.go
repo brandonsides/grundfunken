@@ -21,7 +21,7 @@ func (ae *AddExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	v1Adder, ok := v1.(int)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        fmt.Sprintf("operator '%s' cannot be applied to first operand", ae.op.Value),
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to first operand %v", ae.op.Value, v1),
 			SourceLocation: ae.first.SourceLocation(),
 		}
 	}
@@ -33,7 +33,7 @@ func (ae *AddExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	v2Adder, ok := v2.(int)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        fmt.Sprintf("operator '%s' cannot be applied to second operand", ae.op.Value),
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to second operand %v", ae.op.Value, v2),
 			SourceLocation: ae.second.SourceLocation(),
 		}
 	}

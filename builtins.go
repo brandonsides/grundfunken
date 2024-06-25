@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/brandonksides/grundfunken/models"
@@ -162,6 +163,13 @@ var builtins = map[string]any{
 				return nil, fmt.Errorf("could not parse int from string \"%s\"", str)
 			}
 			return num, nil
+		},
+	},
+	"itoa": &BuiltinFunction{
+		Argc: 1,
+		Fn: func(args []any) (any, error) {
+			i := args[0].(int)
+			return strconv.Itoa(i), nil
 		},
 	},
 }

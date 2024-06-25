@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -18,7 +20,7 @@ func (ae *AndExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	v1Bool, ok := v1.(bool)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        "expected bool",
+			Message:        fmt.Sprintf("expected bool; got %v", v1),
 			SourceLocation: ae.Left.SourceLocation(),
 		}
 	}
@@ -34,7 +36,7 @@ func (ae *AndExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	v2Bool, ok := v2.(bool)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        "expected bool",
+			Message:        fmt.Sprintf("expected bool; got %v", v2),
 			SourceLocation: ae.Right.SourceLocation(),
 		}
 	}

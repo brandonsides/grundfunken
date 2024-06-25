@@ -21,7 +21,7 @@ func (me *MulExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	v1Muller, ok := v1.(int)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        fmt.Sprintf("operator '%s' cannot be applied to first operand", me.op.Value),
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to first operand %v", me.op.Value, v1),
 			SourceLocation: me.first.SourceLocation(),
 		}
 	}
@@ -33,7 +33,7 @@ func (me *MulExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	v2Muller, ok := v2.(int)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        fmt.Sprintf("operator '%s' cannot be applied to second operand", me.op.Value),
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to second operand %v", me.op.Value, v2),
 			SourceLocation: me.second.SourceLocation(),
 		}
 	}

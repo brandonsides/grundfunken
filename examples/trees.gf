@@ -106,14 +106,14 @@ let
         else if val is tree.val then
             true
         else if val < tree.val then
-            if not treeHasLeft(tree) then
-                false
-            else
+//            if not treeHasLeft(tree) then
+//                false
+//            else
                 bstFind(tree.left, val)
         else
-            if not treeHasRight(tree) then
-                false
-            else
+//            if not treeHasRight(tree) then
+//                false
+//            else
                 bstFind(tree.right, val),
 
     nums = asNums(split(input("Enter a list of numbers: "))),

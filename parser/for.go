@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -28,7 +30,7 @@ func (fe *ForExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	iterableExpArr, ok := iterableExp.([]any)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        "for expression must evaluate to an array",
+			Message:        fmt.Sprintf("for expression in clause must evaluate to an array; got %v", iterableExp),
 			SourceLocation: fe.InClause.SourceLocation(),
 		}
 	}

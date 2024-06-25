@@ -21,7 +21,7 @@ func (fce *FunctionCallExpression) Evaluate(bindings models.Bindings) (any, *mod
 	fun, ok := f.(models.Function)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        "cannot call non-function",
+			Message:        fmt.Sprintf("cannot call non-function %v", f),
 			SourceLocation: fce.Function.SourceLocation(),
 		}
 	}

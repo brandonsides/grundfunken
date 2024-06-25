@@ -62,6 +62,10 @@ let
             []
         else
             concat([l1[0], l2[0]], zip(tail(l1), tail(l2))),
+    
+    withIdxAs = func(l, i, v)
+        if i >= len(l) then l else
+            concat(append(l[:i], v), l[i+1:]),
 
     // tile types
     TILE_TYPE_EMPTY = 0,
@@ -103,24 +107,29 @@ let
         else
             "?",
 
-    mazeRowString = func(mazeRow)
-        concatAll(mazeTileString(tile) for tile in mazeRow),
+    mazeRowString = func(mazeRow, visitedRow)
+        let
+            isVisited = func(x) visitedRow[x] is not false
+        in
+            concatAll((
+                let
+                    tileStr = if isVisited(x) then
+                        itoa(len(visitedRow[x]))
+                    else
+                        mazeTileString(mazeRow[x])
+                in
+                    concatStr(tileStr, concatAll(
+                        " " for _ in range(0, 4 - lenStr(tileStr))
+                    ))
+            ) for x in range(0, len(mazeRow))),
 
-    mazeString = func(maze)
-        concatAll(concatStr(mazeRowString(mazeRow), "\n") for mazeRow in maze),
+    mazeString = func(maze, visited)
+        concatAll(
+            concatStr(mazeRowString(maze[i], visited[i]), "\n") for i in range(0, len(maze))
+        ),
     
     mazeRowWithCoordAs = func(mazeRow, x, tile)
-        if len(mazeRow) is 0 then
-            mazeRow
-        else
-            let
-                curTile = mazeRow[0],
-                mazeRowRest = tail(mazeRow)
-            in
-                if x is 0 then
-                    prepend(tile, mazeRowRest)
-                else
-                    prepend(curTile, mazeRowWithCoordAs(mazeRowRest, x-1, tile)),
+        withIdxAs(mazeRow, x, tile),
 
     mazeWithCoordsAs = func(maze, x, y, tile)
         if len(maze) is 0 then
@@ -147,59 +156,82 @@ let
             y: startRow
         },
 
-    solveMazeHelper = func(maze, x, y)
+
+    findEnd = func(maze)
+        let
+            // in each row, try to find the start tile
+            endIdxForEachRow = find(func(tile) tile is TILE_TYPE_END, row) for row in maze,
+            // find the row with non-false start index; i.e. the row for which the start location was found
+            endRow = find(func(endIdxResult) endIdxResult is not false, endIdxForEachRow),
+            endCol = endIdxForEachRow[endRow]
+        in {
+            x: endCol,
+            y: endRow
+        },
+
+    // maze should be a 2D array of tile types
+    // visited should be a 2D array of the same dimensions as maze, containing the best known paths
+    //      from start to these coordinates, or false if no paths are yet known.
+    // x is the x coordinate from which we are solving the maze
+    // y is the y coordinate from which we are solving the maze
+    // pathSoFar is a list of directions representing the path we took from start to get here
+    // 
+    // returns a 2D array that is the same as visited, but any coordinates
+    // that we found a better path to are replaced by the
+    // better paths
+    solveMazeHelper = func(maze, visited, x, y, pathSoFar)
         if x < 0 or y < 0 or x >= len(maze[0]) or y >= len(maze) then
-            false
+            visited
         else
             let
+                isVisited = visited[y][x] is not false,
+                bestPathFromStartSoFar = visited[y][x],
+                withNewBestPath = withIdxAs(visited, y, withIdxAs(visited[y], x, pathSoFar)),
                 tile = maze[y][x]
             in
-                if tile is TILE_TYPE_WALL or tile is TILE_TYPE_PATH then
-                    false
-                else if tile is TILE_TYPE_END then
-                    []
+                // if this is a wall or we already know of a better path, there is no reason to
+                // keep exploring
+                if tile is TILE_TYPE_WALL or (
+                    isVisited and len(bestPathFromStartSoFar) <= len(pathSoFar) + 1
+                ) then
+                    visited
                 else
-                    let
-                        maze = mazeWithCoordsAs(maze, x, y, TILE_TYPE_PATH),
-                        _ = print(concatStr("\n", mazeString(maze))),
-                        _ = sleep(100),
-                        pathLeft = solveMazeHelper(maze, x - 1, y),
-                        pathLeft = if pathLeft is false then false else prepend(DIR_LEFT, pathLeft),
-                        pathUp = solveMazeHelper(maze, x, y - 1),
-                        pathUp = if pathUp is false then false else prepend(DIR_UP, pathUp),
-                        pathRight = solveMazeHelper(maze, x + 1, y),
-                        pathRight = if pathRight is false then false else prepend(DIR_RIGHT, pathRight),
-                        pathDown = solveMazeHelper(maze, x, y + 1),
-                        pathDown = if pathDown is false then false else prepend(DIR_DOWN, pathDown),
-                        paths = [pathLeft, pathUp, pathRight, pathDown],
-                        goodPaths = filter(paths, func(path) path is not false),
-                        minPathLenAndIdx = min(len(path) for path in goodPaths),
-                        res = if minPathLenAndIdx is false then
-                                false
-                            else
-                                goodPaths[minPathLenAndIdx.idx]
+                    let 
+                        _ = print(concatStr("\n", mazeString(maze, visited))),
+                        _ = input("press enter to continue")
                     in
-                        res,
+                        if tile is TILE_TYPE_END then
+                            withNewBestPath
+                        else 
+                            let
+                                visitedAfterLeft = solveMazeHelper(maze, withNewBestPath, x - 1, y, append(pathSoFar, DIR_LEFT)),
+                                visitedAfterUp = solveMazeHelper(maze, visitedAfterLeft, x, y - 1, append(pathSoFar, DIR_UP)),
+                                visitedAfterRight = solveMazeHelper(maze, visitedAfterUp, x + 1, y, append(pathSoFar, DIR_RIGHT)),
+                                allVisited = solveMazeHelper(maze, visitedAfterRight, x, y + 1, append(pathSoFar, DIR_DOWN))
+                            in
+                                allVisited,
     
+    noneVisited = func(maze) (false for _ in mazeRow) for mazeRow in maze,
+
     solveMaze = func(maze)
         let
-            startCoords = findStart(maze)
+            startCoords = findStart(maze),
+            endCoords = findEnd(maze),
+            bestPaths = solveMazeHelper(maze, noneVisited(maze), startCoords.x, startCoords.y, [])
         in
-            solveMazeHelper(maze, startCoords.x, startCoords.y),
+            bestPaths[endCoords.y][endCoords.x],
 
     // maze
     defaultMaze = [
-        [0, 1, 1, 0, 1, 1, 1, 1, 0, 0],
-        [2, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 0, 1, 1, 0, 1, 1, 1, 0, 1],
-        [1, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 1, 0, 1, 1, 1, 0, 1, 1, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-        [1, 0, 1, 0, 1, 1, 0, 1, 3, 1],
-        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
+        [1, 0, 0, 2, 0, 0],
+        [1, 0, 1, 1, 1, 0],
+        [1, 0, 1, 3, 1, 0],
+        [1, 0, 1, 0, 1, 0],
+        [1, 0, 1, 0, 0, 0],
+        [0, 0, 1, 0, 1, 0],
+        [0, 1, 0, 0, 1, 0],
+        [0, 0, 0, 1, 1, 0],
     ],
-
-    _ = print(mazeString(defaultMaze)),
     
     res = solveMaze(defaultMaze)
 in

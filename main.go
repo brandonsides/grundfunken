@@ -97,7 +97,7 @@ func reportHelper(err error, lines []string) {
 		reportHelper(interpreterErr.Underlying, lines)
 	}
 
-	fmt.Println(interpreterErr.Error())
+	fmt.Printf("at line %d, column %d: %s\n", interpreterErr.SourceLocation.LineNumber+1, interpreterErr.SourceLocation.ColumnNumber+1, interpreterErr.Error())
 	fmt.Println(lines[interpreterErr.SourceLocation.LineNumber])
 	fmt.Println(underlineError(interpreterErr.SourceLocation.ColumnNumber))
 }

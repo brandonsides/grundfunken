@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -36,78 +38,30 @@ func (ce *CmpExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 		return nil, err
 	}
 
+	v1Int, ok := v1.(int)
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("expected int; got %v", v1),
+			SourceLocation: ce.first.SourceLocation(),
+		}
+	}
+
+	v2Int, ok := v2.(int)
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("expected int; got %v", v2),
+			SourceLocation: ce.second.SourceLocation(),
+		}
+	}
+
 	switch ce.op.Type {
 	case CMP_OP_TYPE_LESS:
-		v1Int, ok := v1.(int)
-		if !ok {
-			return nil, &models.InterpreterError{
-				Message:        "expected int",
-				SourceLocation: ce.first.SourceLocation(),
-			}
-		}
-
-		v2Int, ok := v2.(int)
-		if !ok {
-			return nil, &models.InterpreterError{
-				Message:        "expected int",
-				SourceLocation: ce.second.SourceLocation(),
-			}
-		}
-
 		return v1Int < v2Int, nil
 	case CMP_OP_TYPE_LESS_EQUAL:
-		v1Int, ok := v1.(int)
-		if !ok {
-			return nil, &models.InterpreterError{
-				Message:        "expected int",
-				SourceLocation: ce.first.SourceLocation(),
-			}
-		}
-
-		v2Int, ok := v2.(int)
-		if !ok {
-			return nil, &models.InterpreterError{
-				Message:        "expected int",
-				SourceLocation: ce.second.SourceLocation(),
-			}
-		}
-
 		return v1Int <= v2Int, nil
 	case CMP_OP_GREATER_EQUAL:
-		v1Int, ok := v1.(int)
-		if !ok {
-			return nil, &models.InterpreterError{
-				Message:        "expected int",
-				SourceLocation: ce.first.SourceLocation(),
-			}
-		}
-
-		v2Int, ok := v2.(int)
-		if !ok {
-			return nil, &models.InterpreterError{
-				Message:        "expected int",
-				SourceLocation: ce.second.SourceLocation(),
-			}
-		}
-
 		return v1Int >= v2Int, nil
 	case CMP_OP_GREATER:
-		v1Int, ok := v1.(int)
-		if !ok {
-			return nil, &models.InterpreterError{
-				Message:        "expected int",
-				SourceLocation: ce.first.SourceLocation(),
-			}
-		}
-
-		v2Int, ok := v2.(int)
-		if !ok {
-			return nil, &models.InterpreterError{
-				Message:        "expected int",
-				SourceLocation: ce.second.SourceLocation(),
-			}
-		}
-
 		return v1Int > v2Int, nil
 	default:
 		return nil, &models.InterpreterError{

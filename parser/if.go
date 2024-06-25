@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -21,7 +23,7 @@ func (ie *IfExpression) Evaluate(bindings models.Bindings) (any, *models.Interpr
 	condBool, ok := cond.(bool)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        "if condition must evaluate to a boolean",
+			Message:        fmt.Sprintf("if condition must evaluate to a boolean; got %v", cond),
 			SourceLocation: ie.Condition.SourceLocation(),
 		}
 	}

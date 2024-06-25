@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -19,7 +21,7 @@ func (aae *ArrayAccessExpression) Evaluate(bindings models.Bindings) (any, *mode
 	arrSlice, ok := arr.([]interface{})
 	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        "expected array",
+			Message:        fmt.Sprintf("expected array; got %v", arr),
 			SourceLocation: aae.Array.SourceLocation(),
 		}
 	}
@@ -31,14 +33,14 @@ func (aae *ArrayAccessExpression) Evaluate(bindings models.Bindings) (any, *mode
 	indexInt, ok := index.(int)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        "expected int",
+			Message:        fmt.Sprintf("expected int; got %v", index),
 			SourceLocation: aae.Index.SourceLocation(),
 		}
 	}
 
 	if indexInt < 0 || indexInt >= len(arrSlice) {
 		return nil, &models.InterpreterError{
-			Message:        "index out of bounds",
+			Message:        fmt.Sprintf("index out of bounds (%d)", index),
 			SourceLocation: aae.Index.SourceLocation(),
 		}
 	}
@@ -65,7 +67,7 @@ func (ase *ArraySliceExpression) Evaluate(bindings models.Bindings) (any, *model
 	arrSlice, ok := arr.([]interface{})
 	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        "expected array",
+			Message:        fmt.Sprintf("expected array; got %v", arr),
 			SourceLocation: ase.Array.SourceLocation(),
 		}
 	}
@@ -79,7 +81,7 @@ func (ase *ArraySliceExpression) Evaluate(bindings models.Bindings) (any, *model
 		beginInt, ok = begin.(int)
 		if !ok {
 			return nil, &models.InterpreterError{
-				Message:        "expected int",
+				Message:        fmt.Sprintf("expected int; got %v", begin),
 				SourceLocation: (*ase.Begin).SourceLocation(),
 			}
 		}
@@ -94,29 +96,29 @@ func (ase *ArraySliceExpression) Evaluate(bindings models.Bindings) (any, *model
 		endInt, ok = end.(int)
 		if !ok {
 			return nil, &models.InterpreterError{
-				Message:        "expected int",
+				Message:        fmt.Sprintf("expected int; got %v", end),
 				SourceLocation: (*ase.End).SourceLocation(),
 			}
 		}
 	}
 
-	if beginInt < 0 || beginInt >= len(arrSlice) {
+	if beginInt < 0 || beginInt > len(arrSlice) {
 		return nil, &models.InterpreterError{
-			Message:        "begin index out of bounds",
+			Message:        fmt.Sprintf("begin index out of bounds (%d)", beginInt),
 			SourceLocation: (*ase.Begin).SourceLocation(),
 		}
 	}
 
 	if endInt < 0 || endInt > len(arrSlice) {
 		return nil, &models.InterpreterError{
-			Message:        "end index out of bounds",
+			Message:        fmt.Sprintf("end index out of bounds (%d)", endInt),
 			SourceLocation: (*ase.End).SourceLocation(),
 		}
 	}
 
 	if beginInt > endInt {
 		return nil, &models.InterpreterError{
-			Message:        "begin index greater than end index",
+			Message:        fmt.Sprintf("begin index %d greater than end index %d", beginInt, endInt),
 			SourceLocation: ase.SourceLocation(),
 		}
 	}
