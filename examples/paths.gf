@@ -181,38 +181,61 @@ let
     // returns a 2D array that is the same as visited, but any coordinates
     // that we found a better path to are replaced by the
     // better paths
-    solveMazeHelper = func(maze, visited, x, y, pathSoFar)
-        if x < 0 or y < 0 or x >= len(maze[0]) or y >= len(maze) then
+    solveMazeHelper = func(maze, visited, queue)
+        if
+            len(queue) is 0
+        then
             visited
-        else
-            let
-                isVisited = visited[y][x] is not false,
-                bestPathFromStartSoFar = visited[y][x],
-                withNewBestPath = withIdxAs(visited, y, withIdxAs(visited[y], x, pathSoFar)),
-                tile = maze[y][x]
+        else let
+            coordsAndPath = queue[0],
+            pathSoFar = coordsAndPath.path,
+            coords = coordsAndPath.coords,
+            x = coords.x,
+            y = coords.y,
+            queue = tail(queue)
+        in if x < 0 or
+                y < 0 or
+                x >= len(maze[0]) or
+                y >= len(maze)
+        then
+            solveMazeHelper(maze, visited, queue)
+        else let
+            tile = maze[y][x],
+            isVisited = visited[y][x] is not false,
+            bestPathFromStartSoFar = visited[y][x]
+        in if tile is TILE_TYPE_WALL or (
+                isVisited and
+                len(bestPathFromStartSoFar) <= len(pathSoFar)
+        ) then
+            solveMazeHelper(maze, visited, queue)
+        else let
+                visited = withIdxAs(visited, y, withIdxAs(visited[y], x, pathSoFar)),
+                _ = print(concatStr("\n", mazeString(maze, visited, x, y))),
+                // _ = input("press enter to continue")
+                _ = sleep(100)
             in
-                // if this is a wall or we already know of a better path, there is no reason to
-                // keep exploring
-                if tile is TILE_TYPE_WALL or (
-                    isVisited and len(bestPathFromStartSoFar) <= len(pathSoFar) + 1
-                ) then
-                    visited
-                else
-                    let 
-                        _ = print(concatStr("\n", mazeString(maze, visited, x, y))),
-                        // _ = input("press enter to continue")
-                        _ = sleep(20)
+                if tile is TILE_TYPE_END then
+                    solveMazeHelper(maze, visited, queue)
+                else 
+                    let
+                        queue = append(queue, {
+                            coords: {x: x-1, y: y},
+                            path: append(pathSoFar, DIR_LEFT)
+                        }),
+                        queue = append(queue, {
+                            coords: {x: x, y: y-1},
+                            path: append(pathSoFar, DIR_UP)
+                        }),
+                        queue = append(queue, {
+                            coords: {x: x+1, y: y},
+                            path: append(pathSoFar, DIR_RIGHT)   
+                        }),
+                        queue = append(queue, {
+                            coords: {x: x, y: y+1},
+                            path: append(pathSoFar, DIR_DOWN)
+                        })
                     in
-                        if tile is TILE_TYPE_END then
-                            withNewBestPath
-                        else 
-                            let
-                                visitedAfterLeft = solveMazeHelper(maze, withNewBestPath, x - 1, y, append(pathSoFar, DIR_LEFT)),
-                                visitedAfterUp = solveMazeHelper(maze, visitedAfterLeft, x, y - 1, append(pathSoFar, DIR_UP)),
-                                visitedAfterRight = solveMazeHelper(maze, visitedAfterUp, x + 1, y, append(pathSoFar, DIR_RIGHT)),
-                                allVisited = solveMazeHelper(maze, visitedAfterRight, x, y + 1, append(pathSoFar, DIR_DOWN))
-                            in
-                                allVisited,
+                        solveMazeHelper(maze, visited, queue),
     
     noneVisited = func(maze) (false for _ in mazeRow) for mazeRow in maze,
 
@@ -253,7 +276,10 @@ let
         let
             startCoords = findStart(maze),
             endCoords = findEnd(maze),
-            bestPaths = solveMazeHelper(maze, noneVisited(maze), startCoords.x, startCoords.y, [])
+            bestPaths = solveMazeHelper(maze, noneVisited(maze), [{
+                coords: startCoords,
+                path: []
+            }])
         in
             bestPaths[endCoords.y][endCoords.x],
 
@@ -261,15 +287,15 @@ let
     defaultMaze = [
         [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0],
         [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1],
-        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3]
+        [0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+        [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3]
     //    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     //    [0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1],
     //    [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
