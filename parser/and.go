@@ -48,31 +48,29 @@ func (ae *AndExpression) SourceLocation() models.SourceLocation {
 	return ae.Left.SourceLocation()
 }
 
-func parseAndExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	left, rest, err := parseEqExpression(toks)
+func parseAndExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	left, err := parseEqExpression(toks)
 	if err != nil {
-		return nil, toks, err
-	}
-	if len(rest) == 0 {
-		return left, rest, nil
+		return nil, err
 	}
 
-	return foldAnd(left, rest)
+	return foldAnd(left, toks)
 }
 
-func foldAnd(first models.Expression, toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) == 0 || toks[0].Type != tokens.AND {
-		return first, toks, nil
+func foldAnd(first models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	tok := toks.Peek()
+	if tok == nil || tok.Type != tokens.AND {
+		return first, nil
 	}
-	rest = toks[1:]
+	toks.Pop()
 
-	right, rest, err := parseAndExpression(rest)
+	right, err := parseAndExpression(toks)
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
 
 	return &AndExpression{
 		Left:  first,
 		Right: right,
-	}, rest, nil
+	}, nil
 }

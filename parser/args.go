@@ -16,7 +16,8 @@ func parseExpressions(toks []tokens.Token) (exps []models.Expression, rest []tok
 		exps = append(exps, exp)
 		if len(rest) == 0 {
 			return nil, rest, &models.InterpreterError{
-				Message: "unexpected end of input",
+				Message:        "unexpected end of input",
+				SourceLocation: toks[0].SourceLocation,
 			}
 		}
 

@@ -7,77 +7,76 @@ import (
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
-func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) == 0 {
-		return nil, toks, &models.InterpreterError{
-			Message: "expected token",
+func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	tok := toks.Peek()
+	if tok == nil {
+		return nil, &models.InterpreterError{
+			Message:        "expected token",
+			SourceLocation: toks.CurrentSourceLocation(),
 		}
 	}
 
-	switch toks[0].Type {
+	switch tok.Type {
 	case tokens.FUNC:
-		exp, rest, err = parseFunction(toks)
+		exp, err = parseFunction(toks)
 	case tokens.LEFT_PAREN:
-		rest = toks[1:]
-		exp, rest, err = ParseExpression(rest)
+		toks.Pop()
+		exp, err = ParseExpression(toks)
 		if err != nil {
-			return nil, rest, err
+			return nil, err
 		}
-		if len(rest) == 0 {
-			return nil, rest, &models.InterpreterError{
-				Message: "expected closing parenthesis",
-			}
-		}
-		if rest[0].Type != tokens.RIGHT_PAREN {
-			return nil, rest, &models.InterpreterError{
+		tok = toks.Pop()
+		if tok.Type != tokens.RIGHT_PAREN {
+			return nil, &models.InterpreterError{
 				Message:        "expected closing parenthesis",
-				SourceLocation: rest[0].SourceLocation,
+				SourceLocation: tok.SourceLocation,
 			}
 		}
-		rest = rest[1:]
 	case tokens.NUMBER, tokens.MINUS:
 		var numStr string
-		rest = toks
-		if toks[0].Type == tokens.MINUS {
-			rest = toks[1:]
-			if len(rest) == 0 {
-				return nil, rest, &models.InterpreterError{
-					Message: "unexpected end of input",
-				}
-			}
+
+		tok = toks.Peek()
+		if tok.Type == tokens.MINUS {
+			toks.Pop()
 
 			numStr = "-"
 		}
 
-		if rest[0].Type != tokens.NUMBER {
-			return nil, rest, &models.InterpreterError{
+		tok = toks.Pop()
+		if tok == nil {
+			return nil, &models.InterpreterError{
+				Message:        "expected token",
+				SourceLocation: toks.CurrentSourceLocation(),
+			}
+		}
+		if tok.Type != tokens.NUMBER {
+			return nil, &models.InterpreterError{
 				Message:        "unexpected token",
-				SourceLocation: rest[0].SourceLocation,
+				SourceLocation: tok.SourceLocation,
 			}
 		}
 
-		numStr += rest[0].Value
-		rest = rest[1:]
+		numStr += tok.Value
 
 		ret, innerErr := strconv.Atoi(numStr)
 		if innerErr != nil {
-			return nil, toks[1:], &models.InterpreterError{
+			return nil, &models.InterpreterError{
 				Message:        "failed to parse number literal",
 				Underlying:     innerErr,
-				SourceLocation: toks[0].SourceLocation,
+				SourceLocation: tok.SourceLocation,
 			}
 		}
 
 		exp = &LiteralExpression{
 			val: ret,
-			loc: toks[0].SourceLocation,
+			loc: tok.SourceLocation,
 		}
 	case tokens.IDENTIFIER:
-		if toks[0].Value == "true" {
-			exp, rest, err = &LiteralExpression{
+		if tok.Value == "true" {
+			exp, err = &LiteralExpression{
 				val: true,
 				loc: toks[0].SourceLocation,
-			}, toks[1:], nil
+			}, nil
 		} else if toks[0].Value == "false" {
 			exp, rest, err = &LiteralExpression{
 				val: false,
@@ -152,7 +151,8 @@ func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Toke
 		case tokens.DOT:
 			if len(rest) == 0 {
 				return nil, rest, &models.InterpreterError{
-					Message: "unexpected end of input",
+					Message:        "unexpected end of input",
+					SourceLocation: tok.SourceLocation,
 				}
 			}
 			if rest[0].Type != tokens.IDENTIFIER {

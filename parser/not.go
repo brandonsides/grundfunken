@@ -30,23 +30,25 @@ func (ne *NotExpression) SourceLocation() models.SourceLocation {
 	return ne.loc
 }
 
-func parseNotExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) == 0 {
-		return nil, toks, &models.InterpreterError{
-			Message: "expected token",
+func parseNotExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	tok := toks.Pop()
+	if tok == nil {
+		return nil, &models.InterpreterError{
+			Message:        "expected token",
+			SourceLocation: toks.CurrentSourceLocation(),
 		}
 	}
 
-	if toks[0].Type == tokens.NOT {
-		inner, rest, err := parseNotExpression(toks[1:])
+	if tok.Type == tokens.NOT {
+		inner, err := parseNotExpression(toks)
 		if err != nil {
-			return nil, toks, err
+			return nil, err
 		}
 
 		return &NotExpression{
 			Inner: inner,
-			loc:   toks[0].SourceLocation,
-		}, rest, nil
+			loc:   tok.SourceLocation,
+		}, nil
 	}
 
 	return parseAtomic(toks)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/parser"
@@ -17,6 +18,16 @@ func main() {
 	flag.StringVar(&inputFilePath, "input", "", "Path to the input file")
 	flag.Parse()
 
+	result, lines, err := interpret(inputFilePath)
+	if err != nil {
+		report(err, lines)
+		return
+	}
+
+	fmt.Printf("Result: %v\n", result)
+}
+
+func interpret(inputFilePath string) (any, map[string][]string, error) {
 	var input io.ReadCloser
 	if inputFilePath == "" {
 		input = os.Stdin
@@ -29,34 +40,27 @@ func main() {
 	}
 	defer input.Close()
 
-	// hold all the input lines in memory
+	splitPath := strings.Split(inputFilePath, "/")
+	fileName := splitPath[len(splitPath)-1]
+
+	// hold all the input mainLines in memory
 	// so we can report errors with context
-	var lines []string
+	lines := map[string][]string{fileName: make([]string, 0, 0)}
 	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
+		lines[fileName] = append(lines[fileName], scanner.Text())
 	}
+
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("error reading input: %v\n", err)
-		return
+		return nil, lines, err
 	}
-
-	result, err := interpret(lines)
-	if err != nil {
-		report(err, lines)
-		return
-	}
-
-	fmt.Printf("Result: %v\n", result)
-}
-
-func interpret(lines []string) (any, *models.InterpreterError) {
 	// split input into "tokens", which are the smallest
 	// meaningful units of the language: words, numbers,
 	// punctuation, etc.
-	toks, err := tokens.Tokenize(lines)
+	toks, err := tokens.Tokenize(fileName, lines[fileName])
 	if err != nil {
-		return nil, err
+		return nil, lines, err
 	}
 
 	// parse the tokens into an "expression", which is a
@@ -64,11 +68,11 @@ func interpret(lines []string) (any, *models.InterpreterError) {
 	// relationships between the tokens
 	expression, rest, err := parser.ParseExpression(toks)
 	if err != nil {
-		return nil, err
+		return nil, lines, err
 	}
 
 	if len(rest) != 0 {
-		return nil, &models.InterpreterError{
+		return nil, lines, &models.InterpreterError{
 			Message:        "unexpected token",
 			SourceLocation: rest[0].SourceLocation,
 		}
@@ -77,15 +81,31 @@ func interpret(lines []string) (any, *models.InterpreterError) {
 	// evaluate the expression to get the final result
 	// with the top-level bindings for certain builtin
 	// identifiers
-	return expression.Evaluate(builtins)
+	builtins["import"] = &BuiltinFunction{
+		Argc: 1,
+		Fn: func(args []any) (any, error) {
+			path := args[0].(string)
+
+			ret, newLines, err := interpret(path)
+			for fileName, fileLines := range newLines {
+				lines[fileName] = fileLines
+			}
+			return ret, err
+		},
+	}
+	ret, err := expression.Evaluate(builtins)
+	if err != nil {
+		return ret, lines, err
+	}
+	return ret, lines, nil
 }
 
-func report(err error, lines []string) {
+func report(err error, lines map[string][]string) {
 	fmt.Print("Error: ")
 	reportHelper(err, lines)
 }
 
-func reportHelper(err error, lines []string) {
+func reportHelper(err error, lines map[string][]string) {
 	interpreterErr, ok := err.(*models.InterpreterError)
 	if !ok {
 		fmt.Println(err.Error())
@@ -98,7 +118,7 @@ func reportHelper(err error, lines []string) {
 	}
 
 	fmt.Printf("at line %d, column %d: %s\n", interpreterErr.SourceLocation.LineNumber+1, interpreterErr.SourceLocation.ColumnNumber+1, interpreterErr.Error())
-	fmt.Println(lines[interpreterErr.SourceLocation.LineNumber])
+	fmt.Println(lines[interpreterErr.SourceLocation.File][interpreterErr.SourceLocation.LineNumber])
 	fmt.Println(underlineError(interpreterErr.SourceLocation.ColumnNumber))
 }
 

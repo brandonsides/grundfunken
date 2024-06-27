@@ -57,34 +57,30 @@ func (me *MulExpression) SourceLocation() models.SourceLocation {
 	return me.first.SourceLocation()
 }
 
-func parseMulExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	exp, rest, err = parseNotExpression(toks)
+func parseMulExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	exp, err = parseNotExpression(toks)
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
 
-	return foldMul(exp, rest)
+	return foldMul(exp, toks)
 }
 
-func foldMul(first models.Expression, toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) == 0 {
-		return first, toks, nil
+func foldMul(first models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	tok := toks.Peek()
+	if tok == nil || tok.Type != tokens.STAR && tok.Type != tokens.SLASH && tok.Type != tokens.PERCENT {
+		return first, nil
 	}
+	toks.Pop()
 
-	if toks[0].Type != tokens.STAR && toks[0].Type != tokens.SLASH && toks[0].Type != tokens.PERCENT {
-		return first, toks, nil
-	}
-
-	rest = toks[1:]
-
-	right, rest, err := parseMulExpression(rest)
+	right, err := parseMulExpression(toks)
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
 
 	return &MulExpression{
 		first:  first,
-		op:     toks[0],
+		op:     *tok,
 		second: right,
-	}, rest, nil
+	}, nil
 }

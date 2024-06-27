@@ -85,7 +85,11 @@ func parseObjectLiteralExpression(toks []tokens.Token) (exp models.Expression, r
 		var exp1 models.Expression
 		exp1, rest, err = ParseExpression(rest)
 		if err != nil {
-			return nil, toks, err
+			return nil, toks, &models.InterpreterError{
+				Message:        "in object literal expression",
+				Underlying:     err,
+				SourceLocation: rest[0].SourceLocation,
+			}
 		}
 
 		fields[key] = exp1

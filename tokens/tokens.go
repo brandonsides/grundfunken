@@ -88,11 +88,49 @@ type Token struct {
 	SourceLocation models.SourceLocation
 }
 
-func Tokenize(lines []string) ([]Token, *models.InterpreterError) {
+type TokenStack struct {
+	toks   []Token
+	curLoc models.SourceLocation
+}
+
+func (stack *TokenStack) CurrentSourceLocation() models.SourceLocation {
+	return stack.curLoc
+}
+
+func (stack *TokenStack) Pop() *Token {
+	if len(stack.toks) == 0 {
+		return nil
+	}
+
+	this, rest := stack.toks[0], stack.toks[1:]
+
+	if len(rest) == 0 {
+		stack.curLoc = models.SourceLocation{
+			LineNumber:   this.SourceLocation.LineNumber + len(this.Value),
+			ColumnNumber: this.SourceLocation.ColumnNumber,
+			File:         this.SourceLocation.File,
+		}
+	} else {
+		stack.curLoc = rest[0].SourceLocation
+	}
+
+	return &this
+}
+
+func (stack *TokenStack) Peek() *Token {
+	if len(stack.toks) == 0 {
+		return nil
+	}
+
+	ret := stack.toks[0]
+	return &ret
+}
+
+func Tokenize(filename string, lines []string) (*TokenStack, *models.InterpreterError) {
 	toks := make([]Token, 0)
 
 	for lineNumber, line := range lines {
-		lineToks, err := tokenizeLine(line, lineNumber)
+		lineToks, err := tokenizeLine(filename, line, lineNumber)
 		if err != nil {
 			return nil, err
 		}
@@ -100,10 +138,15 @@ func Tokenize(lines []string) ([]Token, *models.InterpreterError) {
 		toks = append(toks, lineToks...)
 	}
 
-	return toks, nil
+	return &TokenStack{
+		toks: toks,
+		curLoc: models.SourceLocation{
+			File: filename,
+		},
+	}, nil
 }
 
-func tokenizeLine(line string, lineNumber int) ([]Token, *models.InterpreterError) {
+func tokenizeLine(file string, line string, lineNumber int) ([]Token, *models.InterpreterError) {
 	toks := make([]Token, 0)
 	col := 0
 	for col < len(line) {
@@ -121,6 +164,7 @@ func tokenizeLine(line string, lineNumber int) ([]Token, *models.InterpreterErro
 				Type:  tokType,
 				Value: string(char),
 				SourceLocation: models.SourceLocation{
+					File:         file,
 					LineNumber:   lineNumber,
 					ColumnNumber: col,
 				},
@@ -132,12 +176,14 @@ func tokenizeLine(line string, lineNumber int) ([]Token, *models.InterpreterErro
 				return nil, &models.InterpreterError{
 					Underlying: err,
 					SourceLocation: models.SourceLocation{
+						File:         file,
 						LineNumber:   lineNumber,
 						ColumnNumber: col + length,
 					},
 				}
 			}
 			strTok.SourceLocation = models.SourceLocation{
+				File:         file,
 				LineNumber:   lineNumber,
 				ColumnNumber: col,
 			}
@@ -149,12 +195,14 @@ func tokenizeLine(line string, lineNumber int) ([]Token, *models.InterpreterErro
 				return nil, &models.InterpreterError{
 					Underlying: err,
 					SourceLocation: models.SourceLocation{
+						File:         file,
 						LineNumber:   lineNumber,
 						ColumnNumber: col + length,
 					},
 				}
 			}
 			numTok.SourceLocation = models.SourceLocation{
+				File:         file,
 				LineNumber:   lineNumber,
 				ColumnNumber: col,
 			}
@@ -166,12 +214,14 @@ func tokenizeLine(line string, lineNumber int) ([]Token, *models.InterpreterErro
 				return nil, &models.InterpreterError{
 					Underlying: err,
 					SourceLocation: models.SourceLocation{
+						File:         file,
 						LineNumber:   lineNumber,
 						ColumnNumber: col + length,
 					},
 				}
 			}
 			idTok.SourceLocation = models.SourceLocation{
+				File:         file,
 				LineNumber:   lineNumber,
 				ColumnNumber: col,
 			}
@@ -181,6 +231,7 @@ func tokenizeLine(line string, lineNumber int) ([]Token, *models.InterpreterErro
 			return nil, &models.InterpreterError{
 				Underlying: fmt.Errorf("unexpected character %c", char),
 				SourceLocation: models.SourceLocation{
+					File:         file,
 					LineNumber:   lineNumber,
 					ColumnNumber: col,
 				},
