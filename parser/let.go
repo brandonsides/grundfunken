@@ -45,59 +45,86 @@ func (le *LetExpression) SourceLocation() models.SourceLocation {
 	return le.loc
 }
 
-func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) < 1 {
-		return nil, toks, &models.InterpreterError{
-			Message: "unexpected end of input",
+func parseLetExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	beginLoc := toks.CurrentSourceLocation()
+
+	tok, ok := toks.Peek()
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        "expected let expression",
+			SourceLocation: beginLoc,
 		}
 	}
 
-	if toks[0].Type != tokens.LET {
-		return nil, toks, &models.InterpreterError{
-			Message:        "unexpected token",
-			SourceLocation: toks[0].SourceLocation,
+	if tok.Type != tokens.LET {
+		return nil, &models.InterpreterError{
+			Message:        "unexpected token; expected let clause",
+			SourceLocation: tok.SourceLocation,
 		}
 	}
+	toks.Pop()
 
-	if len(rest) == 1 {
-		return nil, toks, &models.InterpreterError{
-			Message:        "expected identifier after \"let\"",
-			SourceLocation: toks[0].SourceLocation,
+	tok, innerErr := toks.Pop()
+	if err != nil {
+		return nil, &models.InterpreterError{
+			Message: "in let clause",
+			Underlying: &models.InterpreterError{
+				Message:        "expected identifier",
+				SourceLocation: toks.CurrentSourceLocation(),
+				Underlying:     innerErr,
+			},
+			SourceLocation: beginLoc,
 		}
 	}
-	rest = toks[1:]
 
 	bindingExpressions := make([]BindingExpression, 0)
-	for len(rest) > 0 {
-		if rest[0].Type != tokens.IDENTIFIER {
-			return nil, rest, &models.InterpreterError{
-				Message:        "unexpected token",
-				SourceLocation: rest[0].SourceLocation,
+	for {
+		if tok.Type != tokens.IDENTIFIER {
+			return nil, &models.InterpreterError{
+				Message: "in let clause",
+				Underlying: &models.InterpreterError{
+					Message:        "unexpected token; expected identifier",
+					SourceLocation: tok.SourceLocation,
+				},
+				SourceLocation: beginLoc,
+			}
+		}
+		identifier := tok.Value
+		identifierDeclLoc := tok.SourceLocation
+
+		tok, innerErr = toks.Pop()
+		if tok.Type != tokens.EQUAL {
+			return nil, &models.InterpreterError{
+				Message: "in let clause",
+				Underlying: &models.InterpreterError{
+					Message:        "expected equal sign",
+					SourceLocation: tok.SourceLocation,
+					Underlying:     innerErr,
+				},
 			}
 		}
 
-		identifier := rest[0].Value
-		rest = rest[1:]
-
-		if rest[0].Type != tokens.EQUAL {
-			return nil, rest, &models.InterpreterError{
-				Message:        "unexpected token",
-				SourceLocation: rest[0].SourceLocation,
+		tok, innerErr = toks.Pop()
+		if innerErr != nil {
+			return nil, &models.InterpreterError{
+				Message: "in let clause",
+				Underlying: &models.InterpreterError{
+					Message:        "in binding clause for identifier \"" + identifier + "\"",
+					SourceLocation: identifierDeclLoc,
+					Underlying: &models.InterpreterError{
+						Message:        fmt.Sprintf("expected expression"),
+						SourceLocation: toks.CurrentSourceLocation(),
+						Underlying:     innerErr,
+					},
+				},
+				SourceLocation: beginLoc,
 			}
 		}
-
-		if len(rest) == 1 {
-			return nil, rest, &models.InterpreterError{
-				Message:        fmt.Sprintf("expected expression after \"%s\"", rest[0].Value),
-				SourceLocation: rest[0].SourceLocation,
-			}
-		}
-		rest = rest[1:]
 
 		var exp1 models.Expression
-		exp1, rest, err = ParseExpression(rest)
+		exp1, err = ParseExpression(toks)
 		if err != nil {
-			return nil, rest, err
+			return nil, err
 		}
 
 		bindingExpressions = append(bindingExpressions, BindingExpression{
@@ -105,48 +132,75 @@ func parseLetExpression(toks []tokens.Token) (exp models.Expression, rest []toke
 			Expression: exp1,
 		})
 
-		if len(rest) == 0 {
-			return nil, rest, &models.InterpreterError{
-				Message:        "expected in clause or binding clause after binding expression",
-				SourceLocation: exp1.SourceLocation(),
+		tok, innerErr = toks.Pop()
+		if innerErr != nil {
+			return nil, &models.InterpreterError{
+				Message:        "in let clause",
+				SourceLocation: beginLoc,
+				Underlying: &models.InterpreterError{
+					Message:        "after binding clause for identifier \"" + identifier + "\"",
+					SourceLocation: identifierDeclLoc,
+					Underlying: &models.InterpreterError{
+						Message:        "expected \"in\" clause",
+						Underlying:     innerErr,
+						SourceLocation: exp1.SourceLocation(),
+					},
+				},
 			}
 		}
 
-		if rest[0].Type != tokens.COMMA {
+		if tok.Type != tokens.COMMA {
 			break
 		}
 
-		if len(rest) == 1 {
-			return nil, rest, &models.InterpreterError{
-				Message:        "expected binding clause after comma",
-				SourceLocation: rest[0].SourceLocation,
+		if tok, innerErr = toks.Pop(); innerErr != nil {
+			return nil, &models.InterpreterError{
+				Message:        "in let clause",
+				SourceLocation: beginLoc,
+				Underlying: &models.InterpreterError{
+					Message:        "after comma",
+					SourceLocation: tok.SourceLocation,
+					Underlying: &models.InterpreterError{
+						Message:        "expected identifier for next binding",
+						SourceLocation: toks.CurrentSourceLocation(),
+						Underlying:     innerErr,
+					},
+				},
 			}
 		}
-		rest = rest[1:]
 	}
 
-	if rest[0].Type != tokens.IN {
-		return nil, rest, &models.InterpreterError{
-			Message:        "unexpected token",
-			SourceLocation: rest[0].SourceLocation,
+	if tok.Type != tokens.IN {
+		return nil, &models.InterpreterError{
+			Message:        "in let clause",
+			SourceLocation: beginLoc,
+			Underlying: &models.InterpreterError{
+				Message:        "unexpected token; expected \"in\" clause",
+				SourceLocation: tok.SourceLocation,
+			},
 		}
 	}
 
-	if len(rest) == 1 {
-		return nil, rest, &models.InterpreterError{
-			Message: "expected expression after \"in\"",
+	_, ok = toks.Peek()
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        "in let clause",
+			SourceLocation: beginLoc,
+			Underlying: &models.InterpreterError{
+				Message:        "expected expression after \"in\"",
+				SourceLocation: toks.CurrentSourceLocation(),
+			},
 		}
 	}
-	rest = rest[1:]
 
-	exp2, rest, err := ParseExpression(rest)
+	exp2, err := ParseExpression(toks)
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
 
 	return &LetExpression{
 		LetClauses: bindingExpressions,
-		loc:        toks[0].SourceLocation,
+		loc:        beginLoc,
 		InClause:   exp2,
-	}, rest, nil
+	}, nil
 }

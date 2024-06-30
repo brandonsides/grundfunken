@@ -65,8 +65,8 @@ func parseAddExpression(toks *tokens.TokenStack) (exp models.Expression, err *mo
 }
 
 func foldAdd(first models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
-	tok := toks.Peek()
-	if tok == nil || tok.Type != tokens.PLUS && tok.Type != tokens.MINUS {
+	tok, ok := toks.Peek()
+	if !ok || tok.Type != tokens.PLUS && tok.Type != tokens.MINUS {
 		return first, nil
 	}
 	toks.Pop()
@@ -79,7 +79,7 @@ func foldAdd(first models.Expression, toks *tokens.TokenStack) (exp models.Expre
 	}
 
 	withNext = &AddExpression{
-		op:     *tok,
+		op:     tok,
 		first:  first,
 		second: next,
 	}

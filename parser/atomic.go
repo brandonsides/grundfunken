@@ -8,10 +8,12 @@ import (
 )
 
 func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
-	tok := toks.Peek()
-	if tok == nil {
+	beginLoc := toks.CurrentSourceLocation()
+
+	tok, ok := toks.Peek()
+	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        "expected token",
+			Message:        "expected expression",
 			SourceLocation: toks.CurrentSourceLocation(),
 		}
 	}
@@ -25,7 +27,14 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 		if err != nil {
 			return nil, err
 		}
-		tok = toks.Pop()
+		tok, err := toks.Pop()
+		if err != nil {
+			return nil, &models.InterpreterError{
+				Message:        "expected closing parenthesis",
+				SourceLocation: exp.SourceLocation(),
+			}
+		}
+
 		if tok.Type != tokens.RIGHT_PAREN {
 			return nil, &models.InterpreterError{
 				Message:        "expected closing parenthesis",
@@ -35,23 +44,30 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 	case tokens.NUMBER, tokens.MINUS:
 		var numStr string
 
-		tok = toks.Peek()
-		if tok.Type == tokens.MINUS {
-			toks.Pop()
-
-			numStr = "-"
-		}
-
-		tok = toks.Pop()
-		if tok == nil {
+		tok, innerErr := toks.Pop()
+		if innerErr != nil {
 			return nil, &models.InterpreterError{
-				Message:        "expected token",
+				Message:        "expected number",
 				SourceLocation: toks.CurrentSourceLocation(),
+				Underlying:     innerErr,
 			}
 		}
+
+		if tok.Type == tokens.MINUS {
+			numStr = "-"
+			tok, innerErr = toks.Pop()
+			if innerErr != nil {
+				return nil, &models.InterpreterError{
+					Message:        "expected number",
+					SourceLocation: toks.CurrentSourceLocation(),
+					Underlying:     innerErr,
+				}
+			}
+		}
+
 		if tok.Type != tokens.NUMBER {
 			return nil, &models.InterpreterError{
-				Message:        "unexpected token",
+				Message:        "unexpected token; expected number",
 				SourceLocation: tok.SourceLocation,
 			}
 		}
@@ -72,110 +88,150 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 			loc: tok.SourceLocation,
 		}
 	case tokens.IDENTIFIER:
+		tok, innerErr := toks.Pop()
+		if innerErr != nil {
+			return nil, &models.InterpreterError{
+				Message:        "expected identifier",
+				SourceLocation: toks.CurrentSourceLocation(),
+				Underlying:     innerErr,
+			}
+		}
+
 		if tok.Value == "true" {
 			exp, err = &LiteralExpression{
 				val: true,
-				loc: toks[0].SourceLocation,
+				loc: tok.SourceLocation,
 			}, nil
-		} else if toks[0].Value == "false" {
-			exp, rest, err = &LiteralExpression{
+		} else if tok.Value == "false" {
+			exp, err = &LiteralExpression{
 				val: false,
-				loc: toks[0].SourceLocation,
-			}, toks[1:], nil
+				loc: tok.SourceLocation,
+			}, nil
 		} else {
-			exp, rest, err = &IdentifierExpression{
-				name: toks[0].Value,
-				loc:  toks[0].SourceLocation,
-			}, toks[1:], nil
+			exp, err = &IdentifierExpression{
+				name: tok.Value,
+				loc:  tok.SourceLocation,
+			}, nil
 		}
 	case tokens.LEFT_SQUARE_BRACKET:
-		exp, rest, err = parseArrayLiteral(toks)
+		exp, err = parseArrayLiteral(toks)
 	case tokens.LEFT_SQUIGGLY_BRACKET:
-		exp, rest, err = parseObjectLiteralExpression(toks)
+		exp, err = parseObjectLiteralExpression(toks)
 	case tokens.STRING:
-		exp, rest, err = &LiteralExpression{
-			val: toks[0].Value,
-			loc: toks[0].SourceLocation,
-		}, toks[1:], nil
+		tok, innerErr := toks.Pop()
+		if innerErr != nil {
+			return nil, &models.InterpreterError{
+				Message:        "expected string",
+				SourceLocation: toks.CurrentSourceLocation(),
+				Underlying:     innerErr,
+			}
+		}
+		exp, err = &LiteralExpression{
+			val: tok.Value,
+			loc: tok.SourceLocation,
+		}, nil
 	case tokens.LET:
-		exp, rest, err = parseLetExpression(toks)
+		exp, err = parseLetExpression(toks)
 	case tokens.IF:
-		exp, rest, err = parseIfExpression(toks)
+		exp, err = parseIfExpression(toks)
 	default:
-		return nil, toks, nil
+		return nil, nil
 	}
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
 
-	for len(rest) != 0 && (rest[0].Type == tokens.LEFT_SQUARE_BRACKET || rest[0].Type == tokens.LEFT_PAREN || rest[0].Type == tokens.DOT) {
-		tok := rest[0]
-		rest = rest[1:]
-
+	for tok, innerErr := toks.Pop(); innerErr == nil && (tok.Type == tokens.LEFT_SQUARE_BRACKET || tok.Type == tokens.LEFT_PAREN || tok.Type == tokens.DOT); tok, innerErr = toks.Pop() {
 		switch tok.Type {
 		case tokens.LEFT_PAREN:
+			parenLoc := tok.SourceLocation
 			var exps []models.Expression
-			exps, rest, err = parseExpressions(rest)
+			exps, err = parseExpressions(toks)
 			if err != nil {
-				return nil, rest, err
+				return nil, err
 			}
-			if rest[0].Type != tokens.RIGHT_PAREN {
-				return nil, rest, &models.InterpreterError{
-					Message:        "unexpected token",
-					SourceLocation: rest[0].SourceLocation,
+			if tok.Type != tokens.RIGHT_PAREN {
+				return nil, &models.InterpreterError{
+					Message:        "to terminate function call",
+					SourceLocation: parenLoc,
+					Underlying: &models.InterpreterError{
+						Message:        "unexpected token; exxpected closing parenthesis",
+						SourceLocation: tok.SourceLocation,
+					},
 				}
 			}
-			rest = rest[1:]
 			exp = &FunctionCallExpression{
 				Function: exp,
 				Args:     exps,
-				loc:      toks[0].SourceLocation,
+				loc:      beginLoc,
 			}
 		case tokens.LEFT_SQUARE_BRACKET:
-			exp, rest, err = parseArrayIndex(exp, rest)
+			bracketLoc := tok.SourceLocation
+			exp, err = parseArrayIndex(exp, toks)
 			if err != nil {
-				return nil, rest, err
+				return nil, err
 			}
-			if len(rest) == 0 {
-				return nil, rest, &models.InterpreterError{
-					Message: "unexpected end of input",
+
+			tok, innerErr = toks.Pop()
+			if innerErr != nil {
+				return nil, &models.InterpreterError{
+					Message:        "to terminate array index",
+					SourceLocation: bracketLoc,
+					Underlying: &models.InterpreterError{
+						Message:        "expected closing square bracket",
+						SourceLocation: exp.SourceLocation(),
+					},
 				}
 			}
-			if rest[0].Type != tokens.RIGHT_SQUARE_BRACKET {
-				return nil, rest, &models.InterpreterError{
-					Message:        "unexpected token",
-					SourceLocation: rest[0].SourceLocation,
-				}
-			}
-			rest = rest[1:]
-		case tokens.DOT:
-			if len(rest) == 0 {
-				return nil, rest, &models.InterpreterError{
-					Message:        "unexpected end of input",
+			if tok.Type != tokens.RIGHT_SQUARE_BRACKET {
+				return nil, &models.InterpreterError{
+					Message:        "unexpected token; expected closing square bracket",
 					SourceLocation: tok.SourceLocation,
+					Underlying: &models.InterpreterError{
+						Message:        "to terminate array index",
+						SourceLocation: bracketLoc,
+					},
 				}
 			}
-			if rest[0].Type != tokens.IDENTIFIER {
-				return nil, rest, &models.InterpreterError{
-					Message:        "unexpected token",
-					SourceLocation: rest[0].SourceLocation,
+		case tokens.DOT:
+			dotLoc := tok.SourceLocation
+			tok, innerErr = toks.Pop()
+			if innerErr != nil {
+				return nil, &models.InterpreterError{
+					Message:        "in object field access",
+					SourceLocation: dotLoc,
+					Underlying: &models.InterpreterError{
+						Message:        "expected identifier",
+						SourceLocation: toks.CurrentSourceLocation(),
+						Underlying:     innerErr,
+					},
+				}
+			}
+
+			if tok.Type != tokens.IDENTIFIER {
+				return nil, &models.InterpreterError{
+					Message:        "unexpected token; expected identifier",
+					SourceLocation: tok.SourceLocation,
 				}
 			}
 			exp = &FieldAccessExpression{
 				Object: exp,
-				Field:  rest[0].Value,
+				Field:  tok.Value,
 				loc: models.SourceLocation{
 					LineNumber:   exp.SourceLocation().LineNumber,
 					ColumnNumber: exp.SourceLocation().ColumnNumber,
 				},
 			}
-			rest = rest[1:]
 		}
 	}
 
-	if len(rest) != 0 && rest[0].Type == tokens.FOR {
-		exp, rest, err = parseForExpression(exp, rest)
+	tok, ok = toks.Peek()
+	if ok && tok.Type == tokens.FOR {
+		exp, err = parseForExpression(exp, toks)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return exp, rest, err
+	return exp, err
 }

@@ -130,47 +130,68 @@ func (ase *ArraySliceExpression) SourceLocation() models.SourceLocation {
 	return ase.loc
 }
 
-func parseArrayIndex(arr models.Expression, toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) == 0 {
-		return nil, toks, &models.InterpreterError{
-			Message: "expected token",
+func parseArrayIndex(arr models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	tok, innerErr := toks.Pop()
+	if err != nil {
+		return nil, &models.InterpreterError{
+			Message:        "expected array index expression",
+			Underlying:     innerErr,
+			SourceLocation: arr.SourceLocation(),
 		}
 	}
 
 	var idx *models.Expression
-	rest = toks
-	if toks[0].Type != tokens.COLON {
+	if tok.Type != tokens.COLON {
 		var idxVal models.Expression
-		idxVal, rest, err = ParseExpression(toks)
+		idxVal, err = ParseExpression(toks)
 		if err != nil {
-			return nil, toks, err
+			return nil, err
 		}
 		idx = &idxVal
 	}
 
-	if len(rest) == 0 {
-		return nil, rest, &models.InterpreterError{
-			Message: "unexpected end of input",
+	tok, innerErr = toks.Pop()
+	if innerErr != nil {
+		return nil, &models.InterpreterError{
+			Message:        "after array index expression",
+			Underlying:     innerErr,
+			SourceLocation: arr.SourceLocation(),
 		}
 	}
 
-	if rest[0].Type == tokens.COLON {
-		rest = rest[1:]
-
-		if len(rest) == 0 {
-			return nil, rest, &models.InterpreterError{
-				Message: "unexpected end of input",
+	if tok.Type == tokens.COLON {
+		colonLoc := tok.SourceLocation
+		_, ok := toks.Peek()
+		if !ok {
+			return nil, &models.InterpreterError{
+				Message:        "after slice index separator",
+				SourceLocation: colonLoc,
+				Underlying: &models.InterpreterError{
+					Message:        "expected upper bound expression or closing square bracket",
+					SourceLocation: toks.CurrentSourceLocation(),
+				},
 			}
 		}
 
 		var idx2 *models.Expression
-		if rest[0].Type != tokens.RIGHT_SQUARE_BRACKET {
-			var idxVal models.Expression
-			idxVal, rest, err = ParseExpression(rest)
-			if err != nil {
-				return nil, rest, err
+		var idxVal models.Expression
+		idxVal, err = ParseExpression(toks)
+		if err != nil {
+			return nil, err
+		}
+		idx2 = &idxVal
+
+		tok, innerErr = toks.Pop()
+		if innerErr != nil {
+			return nil, &models.InterpreterError{
+				Message: "after slice index expression",
+				Underlying: &models.InterpreterError{
+					Message:        "expected closing square bracket",
+					SourceLocation: toks.CurrentSourceLocation(),
+					Underlying:     innerErr,
+				},
+				SourceLocation: arr.SourceLocation(),
 			}
-			idx2 = &idxVal
 		}
 
 		return &ArraySliceExpression{
@@ -178,11 +199,23 @@ func parseArrayIndex(arr models.Expression, toks []tokens.Token) (exp models.Exp
 			Begin: idx,
 			End:   idx2,
 			loc:   arr.SourceLocation(),
-		}, rest, nil
+		}, nil
 	}
+
+	if tok.Type != tokens.RIGHT_SQUARE_BRACKET {
+		return nil, &models.InterpreterError{
+			Message:        "after array index expression",
+			SourceLocation: tok.SourceLocation,
+			Underlying: &models.InterpreterError{
+				Message:        "expected closing square bracket",
+				SourceLocation: tok.SourceLocation,
+			},
+		}
+	}
+
 	return &ArrayAccessExpression{
 		Array: arr,
 		Index: *idx,
 		loc:   arr.SourceLocation(),
-	}, rest, nil
+	}, nil
 }

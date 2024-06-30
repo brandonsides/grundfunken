@@ -26,7 +26,7 @@ func (ole *ObjectLiteralExpression) SourceLocation() models.SourceLocation {
 	return ole.loc
 }
 
-func parseObjectLiteralExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
+func parseObjectLiteralExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
 	if len(toks) < 2 {
 		return nil, toks, &models.InterpreterError{
 			Message:        "unexpected end of input",

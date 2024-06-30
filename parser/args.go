@@ -5,29 +5,30 @@ import (
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
-func parseExpressions(toks []tokens.Token) (exps []models.Expression, rest []tokens.Token, err *models.InterpreterError) {
+func parseExpressions(toks *tokens.TokenStack) (exps []models.Expression, err *models.InterpreterError) {
 	exps = make([]models.Expression, 0)
 	var exp models.Expression
-	for exp, rest, err = ParseExpression(toks); err == nil; exp, rest, err = ParseExpression(rest) {
+	for exp, err = ParseExpression(toks); err == nil; exp, err = ParseExpression(toks) {
 		if exp == nil {
-			return exps, rest, nil
+			return exps, nil
 		}
 
 		exps = append(exps, exp)
-		if len(rest) == 0 {
-			return nil, rest, &models.InterpreterError{
-				Message:        "unexpected end of input",
-				SourceLocation: toks[0].SourceLocation,
+		tok, err := toks.Pop()
+		if err != nil {
+			return nil, &models.InterpreterError{
+				Message:        "after expression in expression list",
+				Underlying:     err,
+				SourceLocation: exp.SourceLocation(),
 			}
 		}
 
-		if rest[0].Type != tokens.COMMA {
+		if tok.Type != tokens.COMMA {
 			break
 		}
-		rest = rest[1:]
 	}
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
-	return exps, rest, nil
+	return exps, nil
 }

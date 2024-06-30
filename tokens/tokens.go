@@ -97,9 +97,10 @@ func (stack *TokenStack) CurrentSourceLocation() models.SourceLocation {
 	return stack.curLoc
 }
 
-func (stack *TokenStack) Pop() *Token {
+// Pop removes and returns the next token in the stack
+func (stack *TokenStack) Pop() (Token, error) {
 	if len(stack.toks) == 0 {
-		return nil
+		return Token{}, fmt.Errorf("expected token")
 	}
 
 	this, rest := stack.toks[0], stack.toks[1:]
@@ -114,16 +115,16 @@ func (stack *TokenStack) Pop() *Token {
 		stack.curLoc = rest[0].SourceLocation
 	}
 
-	return &this
+	return Token{}, nil
 }
 
-func (stack *TokenStack) Peek() *Token {
+// Peek returns the next token in the stack without removing it
+func (stack *TokenStack) Peek() (Token, bool) {
 	if len(stack.toks) == 0 {
-		return nil
+		return Token{}, false
 	}
 
-	ret := stack.toks[0]
-	return &ret
+	return stack.toks[0], true
 }
 
 func Tokenize(filename string, lines []string) (*TokenStack, *models.InterpreterError) {
