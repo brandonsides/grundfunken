@@ -53,7 +53,7 @@ func parseArrayLiteral(toks *tokens.TokenStack) (exp models.Expression, err *mod
 	}
 
 	tok, innerErr := toks.Pop()
-	if err != nil {
+	if innerErr != nil {
 		return nil, &models.InterpreterError{
 			Message:        "to terminate array literal",
 			SourceLocation: beginSourceLocation,

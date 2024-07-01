@@ -45,7 +45,7 @@ func interpret(inputFilePath string) (any, map[string][]string, error) {
 
 	// hold all the input mainLines in memory
 	// so we can report errors with context
-	lines := map[string][]string{fileName: make([]string, 0, 0)}
+	lines := map[string][]string{fileName: make([]string, 0)}
 	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
 		lines[fileName] = append(lines[fileName], scanner.Text())
@@ -66,15 +66,16 @@ func interpret(inputFilePath string) (any, map[string][]string, error) {
 	// parse the tokens into an "expression", which is a
 	// tree-like structure that represents the semantic
 	// relationships between the tokens
-	expression, rest, err := parser.ParseExpression(toks)
+	expression, err := parser.ParseExpression(toks)
 	if err != nil {
 		return nil, lines, err
 	}
 
-	if len(rest) != 0 {
+	tok, ok := toks.Peek()
+	if ok {
 		return nil, lines, &models.InterpreterError{
 			Message:        "unexpected token",
-			SourceLocation: rest[0].SourceLocation,
+			SourceLocation: tok.SourceLocation,
 		}
 	}
 

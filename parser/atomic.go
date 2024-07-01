@@ -141,21 +141,36 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 		return nil, err
 	}
 
-	for tok, innerErr := toks.Pop(); innerErr == nil && (tok.Type == tokens.LEFT_SQUARE_BRACKET || tok.Type == tokens.LEFT_PAREN || tok.Type == tokens.DOT); tok, innerErr = toks.Pop() {
+	for tok, ok := toks.Peek(); ok && (tok.Type == tokens.LEFT_SQUARE_BRACKET || tok.Type == tokens.LEFT_PAREN || tok.Type == tokens.DOT); tok, ok = toks.Peek() {
 		switch tok.Type {
 		case tokens.LEFT_PAREN:
 			parenLoc := tok.SourceLocation
 			var exps []models.Expression
+
+			toks.Pop()
 			exps, err = parseExpressions(toks)
 			if err != nil {
 				return nil, err
+			}
+
+			tok, innerErr := toks.Pop()
+			if innerErr != nil {
+				return nil, &models.InterpreterError{
+					Message:        "to terminate function call",
+					SourceLocation: parenLoc,
+					Underlying: &models.InterpreterError{
+						Message:        "expected closing parenthesis",
+						SourceLocation: toks.CurrentSourceLocation(),
+						Underlying:     innerErr,
+					},
+				}
 			}
 			if tok.Type != tokens.RIGHT_PAREN {
 				return nil, &models.InterpreterError{
 					Message:        "to terminate function call",
 					SourceLocation: parenLoc,
 					Underlying: &models.InterpreterError{
-						Message:        "unexpected token; exxpected closing parenthesis",
+						Message:        "unexpected token; expected closing parenthesis",
 						SourceLocation: tok.SourceLocation,
 					},
 				}
@@ -167,12 +182,14 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 			}
 		case tokens.LEFT_SQUARE_BRACKET:
 			bracketLoc := tok.SourceLocation
+
+			toks.Pop()
 			exp, err = parseArrayIndex(exp, toks)
 			if err != nil {
 				return nil, err
 			}
 
-			tok, innerErr = toks.Pop()
+			tok, innerErr := toks.Pop()
 			if innerErr != nil {
 				return nil, &models.InterpreterError{
 					Message:        "to terminate array index",
@@ -185,17 +202,19 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 			}
 			if tok.Type != tokens.RIGHT_SQUARE_BRACKET {
 				return nil, &models.InterpreterError{
-					Message:        "unexpected token; expected closing square bracket",
-					SourceLocation: tok.SourceLocation,
+					Message:        "to terminate array index",
+					SourceLocation: bracketLoc,
 					Underlying: &models.InterpreterError{
-						Message:        "to terminate array index",
-						SourceLocation: bracketLoc,
+						Message:        "unexpected token; expected closing square bracket",
+						SourceLocation: tok.SourceLocation,
 					},
 				}
 			}
 		case tokens.DOT:
 			dotLoc := tok.SourceLocation
-			tok, innerErr = toks.Pop()
+			toks.Pop()
+
+			tok, innerErr := toks.Pop()
 			if innerErr != nil {
 				return nil, &models.InterpreterError{
 					Message:        "in object field access",

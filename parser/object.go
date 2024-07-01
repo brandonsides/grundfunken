@@ -27,101 +27,144 @@ func (ole *ObjectLiteralExpression) SourceLocation() models.SourceLocation {
 }
 
 func parseObjectLiteralExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
-	if len(toks) < 2 {
-		return nil, toks, &models.InterpreterError{
-			Message:        "unexpected end of input",
-			SourceLocation: toks[0].SourceLocation,
+	beginLoc := toks.CurrentSourceLocation()
+
+	tok, innerErr := toks.Pop()
+	if innerErr != nil {
+		return nil, &models.InterpreterError{
+			Message:        "expected object literal expression",
+			SourceLocation: toks.CurrentSourceLocation(),
 		}
 	}
 
-	if toks[0].Type != tokens.LEFT_SQUIGGLY_BRACKET {
-		return nil, toks, &models.InterpreterError{
-			Message:        "unexpected token",
-			SourceLocation: toks[0].SourceLocation,
+	if tok.Type != tokens.LEFT_SQUIGGLY_BRACKET {
+		return nil, &models.InterpreterError{
+			Message:        "unexpected token; expected object literal expression",
+			SourceLocation: tok.SourceLocation,
 		}
 	}
 
-	rest = toks[1:]
 	fields := make(map[string]models.Expression)
 	for {
-		if len(rest) == 0 {
-			return nil, toks, &models.InterpreterError{
-				Message:        "unexpected end of input",
-				SourceLocation: toks[0].SourceLocation,
+		tok, innerErr = toks.Pop()
+		if innerErr != nil {
+			return nil, &models.InterpreterError{
+				Message: "to terminate object literal expression",
+				Underlying: &models.InterpreterError{
+					Message:        "expected closing bracket",
+					SourceLocation: toks.CurrentSourceLocation(),
+					Underlying:     innerErr,
+				},
 			}
 		}
 
-		if rest[0].Type == tokens.RIGHT_SQUIGGLY_BRACKET {
+		if tok.Type == tokens.RIGHT_SQUIGGLY_BRACKET {
 			return &ObjectLiteralExpression{
 				Fields: fields,
-				loc:    toks[0].SourceLocation,
-			}, rest[1:], nil
+				loc:    beginLoc,
+			}, nil
 		}
 
-		key := rest[0].Value
-		rest = rest[1:]
+		key := tok.Value
+		keyLoc := tok.SourceLocation
 
-		if len(rest) == 0 {
-			return nil, toks, &models.InterpreterError{
-				Message:        "unexpected end of input",
-				SourceLocation: toks[0].SourceLocation,
+		tok, innerErr = toks.Pop()
+		if innerErr != nil {
+			return nil, &models.InterpreterError{
+				Message:        "in object literal",
+				SourceLocation: beginLoc,
+				Underlying: &models.InterpreterError{
+					Message:        "to bind object field " + key,
+					SourceLocation: keyLoc,
+					Underlying: &models.InterpreterError{
+						Message:        "expected colon",
+						SourceLocation: toks.CurrentSourceLocation(),
+						Underlying:     innerErr,
+					},
+				},
 			}
 		}
 
-		if rest[0].Type != tokens.COLON {
-			return nil, toks, &models.InterpreterError{
-				Message:        "unexpected token",
-				SourceLocation: rest[0].SourceLocation,
+		if tok.Type != tokens.COLON {
+			return nil, &models.InterpreterError{
+				Message:        "in object literal",
+				SourceLocation: beginLoc,
+				Underlying: &models.InterpreterError{
+					Message:        "to bind object field " + key,
+					SourceLocation: keyLoc,
+					Underlying: &models.InterpreterError{
+						Message:        "unexpected token; expected colon",
+						SourceLocation: tok.SourceLocation,
+						Underlying:     innerErr,
+					},
+				},
 			}
 		}
-		rest = rest[1:]
+		colLoc := tok.SourceLocation
 
-		if len(rest) == 0 {
-			return nil, toks, &models.InterpreterError{
-				Message: "unexpected end of input",
+		_, ok := toks.Peek()
+		if !ok {
+			return nil, &models.InterpreterError{
+				Message:        "in object literal expression",
+				SourceLocation: beginLoc,
+				Underlying: &models.InterpreterError{
+					Message:        "to bind object field " + key,
+					SourceLocation: keyLoc,
+					Underlying: &models.InterpreterError{
+						Message:        "after colon",
+						SourceLocation: colLoc,
+						Underlying: &models.InterpreterError{
+							Message:        "expected expression",
+							SourceLocation: toks.CurrentSourceLocation(),
+							Underlying:     innerErr,
+						},
+					},
+				},
 			}
 		}
 
 		var exp1 models.Expression
-		exp1, rest, err = ParseExpression(rest)
+		exp1, err = ParseExpression(toks)
 		if err != nil {
-			return nil, toks, &models.InterpreterError{
-				Message:        "in object literal expression",
-				Underlying:     err,
-				SourceLocation: rest[0].SourceLocation,
-			}
+			return nil, err
 		}
 
 		fields[key] = exp1
 
-		if len(rest) == 0 {
-			return nil, toks, &models.InterpreterError{
-				Message: "unexpected end of input",
+		tok, ok = toks.Peek()
+		if !ok {
+			return nil, &models.InterpreterError{
+				Message:        "to terminate object literal expression",
+				SourceLocation: beginLoc,
+				Underlying: &models.InterpreterError{
+					Message:        "expected closing bracket",
+					SourceLocation: toks.CurrentSourceLocation(),
+				},
 			}
 		}
 
-		if rest[0].Type != tokens.COMMA {
+		if tok.Type != tokens.COMMA {
 			break
 		}
 
-		rest = rest[1:]
+		toks.Pop()
 	}
 
-	if len(rest) == 0 {
-		return nil, toks, &models.InterpreterError{
-			Message: "unexpected end of input",
-		}
-	}
+	toks.Pop()
 
-	if rest[0].Type != tokens.RIGHT_SQUIGGLY_BRACKET {
-		return nil, toks, &models.InterpreterError{
-			Message:        "unexpected token",
-			SourceLocation: rest[0].SourceLocation,
+	if tok.Type != tokens.RIGHT_SQUIGGLY_BRACKET {
+		return nil, &models.InterpreterError{
+			Message:        "to terminate object literal expression",
+			SourceLocation: beginLoc,
+			Underlying: &models.InterpreterError{
+				Message:        "unexpected token; expected closing bracket",
+				SourceLocation: tok.SourceLocation,
+			},
 		}
 	}
 
 	return &ObjectLiteralExpression{
 		Fields: fields,
-		loc:    toks[0].SourceLocation,
-	}, rest[1:], nil
+		loc:    beginLoc,
+	}, nil
 }

@@ -65,7 +65,7 @@ func parseForExpression(exp1 models.Expression, toks *tokens.TokenStack) (exp mo
 	toks.Pop()
 
 	tok, innerErr := toks.Pop()
-	if err != nil {
+	if innerErr != nil {
 		return nil, &models.InterpreterError{
 			Message:        "expected for clause",
 			Underlying:     innerErr,

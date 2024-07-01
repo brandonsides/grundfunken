@@ -67,8 +67,8 @@ func parseMulExpression(toks *tokens.TokenStack) (exp models.Expression, err *mo
 }
 
 func foldMul(first models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
-	tok := toks.Peek()
-	if tok == nil || tok.Type != tokens.STAR && tok.Type != tokens.SLASH && tok.Type != tokens.PERCENT {
+	tok, ok := toks.Peek()
+	if !ok || tok.Type != tokens.STAR && tok.Type != tokens.SLASH && tok.Type != tokens.PERCENT {
 		return first, nil
 	}
 	toks.Pop()
@@ -80,7 +80,7 @@ func foldMul(first models.Expression, toks *tokens.TokenStack) (exp models.Expre
 
 	return &MulExpression{
 		first:  first,
-		op:     *tok,
+		op:     tok,
 		second: right,
 	}, nil
 }

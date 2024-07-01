@@ -103,19 +103,20 @@ func (stack *TokenStack) Pop() (Token, error) {
 		return Token{}, fmt.Errorf("expected token")
 	}
 
-	this, rest := stack.toks[0], stack.toks[1:]
+	var this Token
+	this, stack.toks = stack.toks[0], stack.toks[1:]
 
-	if len(rest) == 0 {
+	if len(stack.toks) == 0 {
 		stack.curLoc = models.SourceLocation{
 			LineNumber:   this.SourceLocation.LineNumber + len(this.Value),
 			ColumnNumber: this.SourceLocation.ColumnNumber,
 			File:         this.SourceLocation.File,
 		}
 	} else {
-		stack.curLoc = rest[0].SourceLocation
+		stack.curLoc = stack.toks[0].SourceLocation
 	}
 
-	return Token{}, nil
+	return this, nil
 }
 
 // Peek returns the next token in the stack without removing it

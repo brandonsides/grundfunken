@@ -1,5 +1,4 @@
 let
-    // general utils
     tail = func(l)
         if len(l) <= 1 then
             []

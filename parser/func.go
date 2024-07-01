@@ -107,7 +107,7 @@ func parseFunction(toks *tokens.TokenStack) (exp models.Expression, err *models.
 		args = append(args, tok.Value)
 
 		tok, popErr := toks.Pop()
-		if popErr == nil {
+		if popErr != nil {
 			return nil, &models.InterpreterError{
 				Message:        "after comma",
 				SourceLocation: tok.SourceLocation,

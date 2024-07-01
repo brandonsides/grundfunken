@@ -31,8 +31,8 @@ func (ne *NotExpression) SourceLocation() models.SourceLocation {
 }
 
 func parseNotExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
-	tok := toks.Pop()
-	if tok == nil {
+	tok, ok := toks.Peek()
+	if !ok {
 		return nil, &models.InterpreterError{
 			Message:        "expected token",
 			SourceLocation: toks.CurrentSourceLocation(),
@@ -40,6 +40,7 @@ func parseNotExpression(toks *tokens.TokenStack) (exp models.Expression, err *mo
 	}
 
 	if tok.Type == tokens.NOT {
+		toks.Pop()
 		inner, err := parseNotExpression(toks)
 		if err != nil {
 			return nil, err

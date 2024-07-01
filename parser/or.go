@@ -58,8 +58,8 @@ func parseOrExpression(toks *tokens.TokenStack) (exp models.Expression, err *mod
 }
 
 func foldOr(first models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
-	tok := toks.Peek()
-	if tok == nil || tok.Type != tokens.OR {
+	tok, ok := toks.Peek()
+	if !ok || tok.Type != tokens.OR {
 		return first, nil
 	}
 	toks.Pop()

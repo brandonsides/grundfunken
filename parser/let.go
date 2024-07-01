@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"fmt"
-
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -48,11 +46,12 @@ func (le *LetExpression) SourceLocation() models.SourceLocation {
 func parseLetExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
 	beginLoc := toks.CurrentSourceLocation()
 
-	tok, ok := toks.Peek()
-	if !ok {
+	tok, innerErr := toks.Pop()
+	if innerErr != nil {
 		return nil, &models.InterpreterError{
 			Message:        "expected let expression",
 			SourceLocation: beginLoc,
+			Underlying:     innerErr,
 		}
 	}
 
@@ -62,10 +61,9 @@ func parseLetExpression(toks *tokens.TokenStack) (exp models.Expression, err *mo
 			SourceLocation: tok.SourceLocation,
 		}
 	}
-	toks.Pop()
 
-	tok, innerErr := toks.Pop()
-	if err != nil {
+	tok, innerErr = toks.Pop()
+	if innerErr != nil {
 		return nil, &models.InterpreterError{
 			Message: "in let clause",
 			Underlying: &models.InterpreterError{
@@ -104,17 +102,17 @@ func parseLetExpression(toks *tokens.TokenStack) (exp models.Expression, err *mo
 			}
 		}
 
-		tok, innerErr = toks.Pop()
-		if innerErr != nil {
+		var ok bool
+		tok, ok = toks.Peek()
+		if !ok {
 			return nil, &models.InterpreterError{
 				Message: "in let clause",
 				Underlying: &models.InterpreterError{
 					Message:        "in binding clause for identifier \"" + identifier + "\"",
 					SourceLocation: identifierDeclLoc,
 					Underlying: &models.InterpreterError{
-						Message:        fmt.Sprintf("expected expression"),
+						Message:        "expected expression",
 						SourceLocation: toks.CurrentSourceLocation(),
-						Underlying:     innerErr,
 					},
 				},
 				SourceLocation: beginLoc,
@@ -181,7 +179,7 @@ func parseLetExpression(toks *tokens.TokenStack) (exp models.Expression, err *mo
 		}
 	}
 
-	_, ok = toks.Peek()
+	_, ok := toks.Peek()
 	if !ok {
 		return nil, &models.InterpreterError{
 			Message:        "in let clause",

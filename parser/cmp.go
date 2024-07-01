@@ -85,11 +85,11 @@ func parseCmpExpression(toks *tokens.TokenStack) (exp models.Expression, err *mo
 }
 
 func foldCmp(first models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
-	tok := toks.Peek()
-	if tok == nil {
+	beginLoc := toks.CurrentSourceLocation()
+	tok, ok := toks.Peek()
+	if !ok {
 		return first, nil
 	}
-	toks.Pop()
 
 	op := CmpOp{
 		SourceLocation: tok.SourceLocation,
@@ -97,7 +97,18 @@ func foldCmp(first models.Expression, toks *tokens.TokenStack) (exp models.Expre
 
 	switch tok.Type {
 	case tokens.LEFT_ANGLE_BRACKET:
-		tok = toks.Peek()
+		toks.Pop()
+		tok, ok = toks.Peek()
+		if !ok {
+			return nil, &models.InterpreterError{
+				Message:        "after comparison operator",
+				SourceLocation: beginLoc,
+				Underlying: &models.InterpreterError{
+					Message:        "expected expression",
+					SourceLocation: toks.CurrentSourceLocation(),
+				},
+			}
+		}
 		if tok.Type == tokens.EQUAL {
 			op.Type = CMP_OP_TYPE_LESS_EQUAL
 			toks.Pop()
@@ -105,7 +116,18 @@ func foldCmp(first models.Expression, toks *tokens.TokenStack) (exp models.Expre
 			op.Type = CMP_OP_TYPE_LESS
 		}
 	case tokens.RIGHT_ANGLE_BRACKET:
-		tok = toks.Peek()
+		toks.Pop()
+		tok, ok = toks.Peek()
+		if !ok {
+			return nil, &models.InterpreterError{
+				Message:        "after comparison operator",
+				SourceLocation: beginLoc,
+				Underlying: &models.InterpreterError{
+					Message:        "expected expression",
+					SourceLocation: toks.CurrentSourceLocation(),
+				},
+			}
+		}
 		if tok.Type == tokens.EQUAL {
 			op.Type = CMP_OP_GREATER_EQUAL
 			toks.Pop()

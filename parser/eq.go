@@ -82,17 +82,23 @@ func foldEq(first models.Expression, toks *tokens.TokenStack) (exp models.Expres
 }
 
 func parseEqOp(toks *tokens.TokenStack) (op *EqOp, err *models.InterpreterError) {
-	tok := toks.Peek()
-	if tok == nil || tok.Type != tokens.IS {
+	beginLoc := toks.CurrentSourceLocation()
+	tok, ok := toks.Peek()
+	if !ok || tok.Type != tokens.IS {
 		return nil, nil
 	}
 	toks.Pop()
 
-	tok = toks.Pop()
-	if tok == nil {
+	tok, innerErr := toks.Pop()
+	if innerErr != nil {
 		return nil, &models.InterpreterError{
-			Message:        "expected expression",
-			SourceLocation: toks.CurrentSourceLocation(),
+			Message:        "after \"is\" operator",
+			SourceLocation: beginLoc,
+			Underlying: &models.InterpreterError{
+				Message:        "expected expression",
+				SourceLocation: toks.CurrentSourceLocation(),
+				Underlying:     innerErr,
+			},
 		}
 	}
 	if tok.Type == tokens.NOT {

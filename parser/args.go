@@ -14,8 +14,8 @@ func parseExpressions(toks *tokens.TokenStack) (exps []models.Expression, err *m
 		}
 
 		exps = append(exps, exp)
-		tok, err := toks.Pop()
-		if err != nil {
+		tok, ok := toks.Peek()
+		if !ok {
 			return nil, &models.InterpreterError{
 				Message:        "after expression in expression list",
 				Underlying:     err,
@@ -26,6 +26,8 @@ func parseExpressions(toks *tokens.TokenStack) (exps []models.Expression, err *m
 		if tok.Type != tokens.COMMA {
 			break
 		}
+
+		toks.Pop()
 	}
 	if err != nil {
 		return nil, err
