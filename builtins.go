@@ -53,6 +53,12 @@ var builtins = map[string]any{
 			return ret, nil
 		},
 	},
+	"toString": &BuiltinFunction{
+		Argc: 1,
+		Fn: func(args []any) (any, error) {
+			return fmt.Sprintf("%v", args[0]), nil
+		},
+	},
 	"prepend": &BuiltinFunction{
 		Argc: 2,
 		Fn: func(args []any) (any, error) {

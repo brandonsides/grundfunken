@@ -131,11 +131,12 @@ func (ase *ArraySliceExpression) SourceLocation() models.SourceLocation {
 }
 
 func parseArrayIndex(arr models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
-	tok, innerErr := toks.Pop()
-	if innerErr != nil {
+	beginLoc := toks.CurrentSourceLocation()
+
+	tok, ok := toks.Peek()
+	if !ok {
 		return nil, &models.InterpreterError{
 			Message:        "expected array index expression",
-			Underlying:     innerErr,
 			SourceLocation: arr.SourceLocation(),
 		}
 	}
@@ -147,33 +148,25 @@ func parseArrayIndex(arr models.Expression, toks *tokens.TokenStack) (exp models
 		if err != nil {
 			return nil, err
 		}
-		idx = &idxVal
+		if idxVal != nil {
+			idx = &idxVal
+		}
 	}
 
-	var ok bool
 	tok, ok = toks.Peek()
 	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        "after array index expression",
-			SourceLocation: arr.SourceLocation(),
+			Message:        "to terminate array index",
+			SourceLocation: beginLoc,
+			Underlying: &models.InterpreterError{
+				Message:        "expected right square bracket",
+				SourceLocation: arr.SourceLocation(),
+			},
 		}
 	}
 
 	if tok.Type == tokens.COLON {
 		toks.Pop()
-
-		colonLoc := tok.SourceLocation
-		_, ok := toks.Peek()
-		if !ok {
-			return nil, &models.InterpreterError{
-				Message:        "after slice index separator",
-				SourceLocation: colonLoc,
-				Underlying: &models.InterpreterError{
-					Message:        "expected upper bound expression or closing square bracket",
-					SourceLocation: toks.CurrentSourceLocation(),
-				},
-			}
-		}
 
 		var idx2 *models.Expression
 		var idxVal models.Expression
@@ -181,7 +174,9 @@ func parseArrayIndex(arr models.Expression, toks *tokens.TokenStack) (exp models
 		if err != nil {
 			return nil, err
 		}
-		idx2 = &idxVal
+		if idxVal != nil {
+			idx2 = &idxVal
+		}
 
 		return &ArraySliceExpression{
 			Array: arr,
@@ -189,6 +184,13 @@ func parseArrayIndex(arr models.Expression, toks *tokens.TokenStack) (exp models
 			End:   idx2,
 			loc:   arr.SourceLocation(),
 		}, nil
+	}
+
+	if idx == nil {
+		return nil, &models.InterpreterError{
+			Message:        "expected array index expression",
+			SourceLocation: beginLoc,
+		}
 	}
 
 	return &ArrayAccessExpression{

@@ -89,19 +89,19 @@ func parseEqOp(toks *tokens.TokenStack) (op *EqOp, err *models.InterpreterError)
 	}
 	toks.Pop()
 
-	tok, innerErr := toks.Pop()
-	if innerErr != nil {
+	tok, ok = toks.Peek()
+	if !ok {
 		return nil, &models.InterpreterError{
 			Message:        "after \"is\" operator",
 			SourceLocation: beginLoc,
 			Underlying: &models.InterpreterError{
 				Message:        "expected expression",
 				SourceLocation: toks.CurrentSourceLocation(),
-				Underlying:     innerErr,
 			},
 		}
 	}
 	if tok.Type == tokens.NOT {
+		toks.Pop()
 		op = &EqOp{
 			Type:           EQ_OP_NOT_EQUAL,
 			SourceLocation: tok.SourceLocation,

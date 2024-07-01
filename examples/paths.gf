@@ -1,4 +1,5 @@
 let
+    // general utils
     tail = func(l)
         if len(l) <= 1 then
             []
@@ -56,15 +57,27 @@ let
         else
             concatStr(l[0], concatAll(tail(l))),
     
-    zip = func(l1, l2)
-        if len(l1) is 0 or len(l2) is 0 then
-            []
-        else
-            concat([l1[0], l2[0]], zip(tail(l1), tail(l2))),
-    
     withIdxAs = func(l, i, v)
         if i >= len(l) then l else
             concat(append(l[:i], v), l[i+1:]),
+    
+    abs = func(a) if a < 0 then -1 * a else a,
+
+    dist = func(a, b) abs(a.x - b.x) + abs(a.y - b.y),
+
+    push = func(queue, item, cmp)
+        //let _ = print(concatAll(["pushing ", toString(item), " onto ", toString(queue)])) in
+        if len(queue) is 0 then
+            //let _ = print(concatAll(["queue is empty; returning [", toString(item), "]"])) in
+            [item]
+        else let
+            idx = len(queue) / 2,
+            cmpRes = cmp(item, queue[idx])
+            //_ = print(concatAll(["comparison with ", toString(queue[idx]), " at index ", toString(idx), " is ", toString(cmpRes)]))
+        in if cmpRes then //let _ = print("pushing onto left") in
+            concat(push(queue[:idx], item, cmp), queue[idx:])
+        else //let _ = print("pushing onto right") in
+            concat(queue[:idx+1], push(queue[idx+1:], item, cmp)),
 
     // tile types
     TILE_TYPE_EMPTY = 0,
@@ -115,7 +128,7 @@ let
                     tileStr = if x is curX then
                         "-"
                     else if mazeRow[x] is TILE_TYPE_EMPTY and isVisited(x) then
-                        itoa(len(visitedRow[x]))
+                        toString(len(visitedRow[x]))
                     else
                         mazeTileString(mazeRow[x])
                 in
@@ -180,8 +193,10 @@ let
     // returns a 2D array that is the same as visited, but any coordinates
     // that we found a better path to are replaced by the
     // better paths
-    solveMazeHelper = func(maze, visited, x, y, pathSoFar)
-        if x < 0 or y < 0 or x >= len(maze[0]) or y >= len(maze) then
+    solveMazeHelper = func(maze, visited, queue, end)
+        if
+            len(queue) is 0
+        then
             visited
         else let
             coordsAndPath = queue[0],
@@ -209,30 +224,32 @@ let
                 visited = withIdxAs(visited, y, withIdxAs(visited[y], x, pathSoFar)),
                 _ = print(concatStr("\n", mazeString(maze, visited, x, y))),
                 // _ = input("press enter to continue")
-                _ = sleep(10)
+                _ = sleep(100)
             in
-                // if this is a wall or we already know of a better path, there is no reason to
-                // keep exploring
-                if tile is TILE_TYPE_WALL or (
-                    isVisited and len(bestPathFromStartSoFar) <= len(pathSoFar) + 1
-                ) then
+                if tile is TILE_TYPE_END then
                     visited
-                else
-                    let 
-                        _ = print(concatStr("\n", mazeString(maze, visited, x, y))),
-                        // _ = input("press enter to continue")
-                        _ = sleep(20)
+                else 
+                    let
+                        queueCmp = func(a, b) len(a.path) + dist(a.coords, end) < len(b.path) + dist(b.coords, end) or
+                            (len(a.path) + dist(a.coords, end) is len(b.path) + dist(b.coords, end) and len(a.path) >= len(b.path)),
+                        queue = push(queue, {
+                            coords: {x: x-1, y: y},
+                            path: append(pathSoFar, DIR_LEFT)
+                        }, queueCmp),
+                        queue = push(queue, {
+                            coords: {x: x, y: y-1},
+                            path: append(pathSoFar, DIR_UP)
+                        }, queueCmp),
+                        queue = push(queue, {
+                            coords: {x: x+1, y: y},
+                            path: append(pathSoFar, DIR_RIGHT)   
+                        }, queueCmp),
+                        queue = push(queue, {
+                            coords: {x: x, y: y+1},
+                            path: append(pathSoFar, DIR_DOWN)
+                        }, queueCmp)
                     in
-                        if tile is TILE_TYPE_END then
-                            withNewBestPath
-                        else 
-                            let
-                                visitedAfterLeft = solveMazeHelper(maze, withNewBestPath, x - 1, y, append(pathSoFar, DIR_LEFT)),
-                                visitedAfterUp = solveMazeHelper(maze, visitedAfterLeft, x, y - 1, append(pathSoFar, DIR_UP)),
-                                visitedAfterRight = solveMazeHelper(maze, visitedAfterUp, x + 1, y, append(pathSoFar, DIR_RIGHT)),
-                                allVisited = solveMazeHelper(maze, visitedAfterRight, x, y + 1, append(pathSoFar, DIR_DOWN))
-                            in
-                                allVisited,
+                        solveMazeHelper(maze, visited, queue, end),
     
     noneVisited = func(maze) (false for _ in mazeRow) for mazeRow in maze,
 
@@ -273,59 +290,37 @@ let
         let
             startCoords = findStart(maze),
             endCoords = findEnd(maze),
-            bestPaths = solveMazeHelper(maze, noneVisited(maze), startCoords.x, startCoords.y, [])
+            bestPaths = solveMazeHelper(maze, noneVisited(maze), [{
+                coords: startCoords,
+                path: []
+            }], endCoords)
         in
             bestPaths[endCoords.y][endCoords.x],
 
     // maze
     defaultMaze = [
-        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0],
-        [0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0],
-        [0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0],
-        [0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1],
-        [0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1],
-        [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0],
-        [1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0],
-        [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1],
-        [1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
-        [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1],
-        [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0],
-        [0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0],
-        [0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0],
-        [0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
-        [0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        //[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-        //[0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1],
-        //[0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0],
-        //[0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1],
-        //[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0],
-        //[0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0],
-        //[0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-        //[0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0],
-        //[1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0],
-        //[0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-        //[0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1],
-        //[0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        //[0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-        //[0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        //[0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1],
-        //[0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-        //[0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0],
-        //[0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-        //[1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1],
-        //[0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 3, 0, 0],
-        //[1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0],
-        //[0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0]
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1],
+        [0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0],
+        [0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0],
+        [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0],
+        [1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0],
+        [0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+        [0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 3, 0, 0],
+        [1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0],
+        [0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0]
     ],
     
     res = solveMaze(defaultMaze)
