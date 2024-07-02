@@ -182,4 +182,5 @@ let
             bestPaths[endCoords.y][endCoords.x]
 in {
     solveMaze: solveMaze,
+    drawFinishedMaze: drawFinishedMaze
 }

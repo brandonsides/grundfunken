@@ -33,4 +33,4 @@ in
     if res is false then
         false
     else
-        concatStr("\n", drawFinishedMaze(defaultMaze, res))
+        concatStr("\n", maze.drawFinishedMaze(defaultMaze, res))
