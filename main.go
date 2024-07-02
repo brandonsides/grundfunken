@@ -29,19 +29,28 @@ func main() {
 
 func interpret(inputFilePath string) (any, map[string][]string, error) {
 	var input io.ReadCloser
+
+	var fileName string
 	if inputFilePath == "" {
 		input = os.Stdin
+		fileName = "stdin"
 	} else {
 		var err error
 		input, err = os.Open(inputFilePath)
 		if err != nil {
 			panic(fmt.Errorf("failed to open the file at the provided path: %w", err))
 		}
+
+		splitPath := strings.Split(inputFilePath, "/")
+		oldDir, err := os.Getwd()
+		if err != nil {
+			panic(fmt.Errorf("failed to get the current working directory: %w", err))
+		}
+		os.Chdir(strings.Join(splitPath[:len(splitPath)-1], "/"))
+		defer os.Chdir(oldDir)
+		fileName = splitPath[len(splitPath)-1]
 	}
 	defer input.Close()
-
-	splitPath := strings.Split(inputFilePath, "/")
-	fileName := splitPath[len(splitPath)-1]
 
 	// hold all the input mainLines in memory
 	// so we can report errors with context
@@ -118,7 +127,7 @@ func reportHelper(err error, lines map[string][]string) {
 		reportHelper(interpreterErr.Underlying, lines)
 	}
 
-	fmt.Printf("at line %d, column %d: %s\n", interpreterErr.SourceLocation.LineNumber+1, interpreterErr.SourceLocation.ColumnNumber+1, interpreterErr.Error())
+	fmt.Printf("in file %s at line %d, column %d: %s\n", interpreterErr.SourceLocation.File, interpreterErr.SourceLocation.LineNumber+1, interpreterErr.SourceLocation.ColumnNumber+1, interpreterErr.Error())
 	fmt.Println(lines[interpreterErr.SourceLocation.File][interpreterErr.SourceLocation.LineNumber])
 	fmt.Println(underlineError(interpreterErr.SourceLocation.ColumnNumber))
 }

@@ -1,83 +1,5 @@
 let
-    // general utils
-    tail = func(l)
-        if len(l) <= 1 then
-            []
-        else
-            l[1:],
-    
-    filter = func(l, f)
-        if len(l) is 0 then
-            []
-        else
-            let
-                first = l[0],
-                rest = filter(tail(l), f)
-            in
-                if f(first) then
-                    prepend(first, rest)
-                else
-                    rest,
-
-    min = func(l)
-        if len(l) is 0 then
-            // false indicates no minumum
-            false
-        else
-            let
-                first = l[0],
-                minRest = min(tail(l))
-            in
-                if minRest is false or first <= minRest.min then {
-                    min: first,
-                    idx: 0
-                } else {
-                    min: minRest.min,
-                    idx: minRest.idx + 1
-                },
-
-    find = func(f, l)
-        if len(l) is 0 then
-            // false indicates not found
-            false
-        else if f(l[0]) then
-            0
-        else
-            let
-                res = find(f, tail(l))
-            in
-                if res is false then
-                    false
-                else
-                    res + 1,
-
-    concatAll = func(l)
-        if len(l) is 0 then
-            ""
-        else
-            concatStr(l[0], concatAll(tail(l))),
-    
-    withIdxAs = func(l, i, v)
-        if i >= len(l) then l else
-            concat(append(l[:i], v), l[i+1:]),
-    
-    abs = func(a) if a < 0 then -1 * a else a,
-
-    dist = func(a, b) abs(a.x - b.x) + abs(a.y - b.y),
-
-    push = func(queue, item, cmp)
-        //let _ = print(concatAll(["pushing ", toString(item), " onto ", toString(queue)])) in
-        if len(queue) is 0 then
-            //let _ = print(concatAll(["queue is empty; returning [", toString(item), "]"])) in
-            [item]
-        else let
-            idx = len(queue) / 2,
-            cmpRes = cmp(item, queue[idx])
-            //_ = print(concatAll(["comparison with ", toString(queue[idx]), " at index ", toString(idx), " is ", toString(cmpRes)]))
-        in if cmpRes then //let _ = print("pushing onto left") in
-            concat(push(queue[:idx], item, cmp), queue[idx:])
-        else //let _ = print("pushing onto right") in
-            concat(queue[:idx+1], push(queue[idx+1:], item, cmp)),
+    utils = import("utils.gf"),
 
     // tile types
     TILE_TYPE_EMPTY = 0,
@@ -123,7 +45,7 @@ let
         let
             isVisited = func(x) visitedRow[x] is not false
         in
-            concatAll((
+            utils.concatAll((
                 let
                     tileStr = if x is curX then
                         "-"
@@ -132,18 +54,18 @@ let
                     else
                         mazeTileString(mazeRow[x])
                 in
-                    concatStr(tileStr, concatAll(
+                    concatStr(tileStr, utils.concatAll(
                         " " for _ in range(0, 4 - lenStr(tileStr))
                     ))
             ) for x in range(0, len(mazeRow))),
 
     mazeString = func(maze, visited, curX, curY)
-        concatAll(
+        utils.concatAll(
             concatStr(mazeRowString(maze[i], visited[i], if i is curY then curX else false), "\n\n") for i in range(0, len(maze))
         ),
     
     mazeRowWithCoordAs = func(mazeRow, x, tile)
-        withIdxAs(mazeRow, x, tile),
+        utils.withIdxAs(mazeRow, x, tile),
 
     mazeWithCoordsAs = func(maze, x, y, tile)
         if len(maze) is 0 then
@@ -151,7 +73,7 @@ let
         else
             let
                 curRow = maze[0],
-                mazeRest = tail(maze)
+                mazeRest = utils.tail(maze)
             in
                 if y is 0 then
                     prepend(mazeRowWithCoordAs(curRow, x, tile), mazeRest)
@@ -161,9 +83,9 @@ let
     findStart = func(maze)
         let
             // in each row, try to find the start tile
-            startIdxForEachRow = find(func(tile) tile is TILE_TYPE_START, row) for row in maze,
+            startIdxForEachRow = utils.find(func(tile) tile is TILE_TYPE_START, row) for row in maze,
             // find the row with non-false start index; i.e. the row for which the start location was found
-            startRow = find(func(startIdxResult) startIdxResult is not false, startIdxForEachRow),
+            startRow = utils.find(func(startIdxResult) startIdxResult is not false, startIdxForEachRow),
             startCol = startIdxForEachRow[startRow]
         in {
             x: startCol,
@@ -174,9 +96,9 @@ let
     findEnd = func(maze)
         let
             // in each row, try to find the start tile
-            endIdxForEachRow = find(func(tile) tile is TILE_TYPE_END, row) for row in maze,
+            endIdxForEachRow = utils.find(func(tile) tile is TILE_TYPE_END, row) for row in maze,
             // find the row with non-false start index; i.e. the row for which the start location was found
-            endRow = find(func(endIdxResult) endIdxResult is not false, endIdxForEachRow),
+            endRow = utils.find(func(endIdxResult) endIdxResult is not false, endIdxForEachRow),
             endCol = endIdxForEachRow[endRow]
         in {
             x: endCol,
@@ -204,7 +126,7 @@ let
             coords = coordsAndPath.coords,
             x = coords.x,
             y = coords.y,
-            queue = tail(queue)
+            queue = utils.tail(queue)
         in if x < 0 or
                 y < 0 or
                 x >= len(maze[0]) or
@@ -221,7 +143,7 @@ let
         ) then
             solveMazeHelper(maze, visited, queue, end)
         else let
-                visited = withIdxAs(visited, y, withIdxAs(visited[y], x, pathSoFar)),
+                visited = utils.withIdxAs(visited, y, utils.withIdxAs(visited[y], x, pathSoFar)),
                 _ = print(concatStr("\n", mazeString(maze, visited, x, y))),
                 // _ = input("press enter to continue")
                 _ = sleep(100)
@@ -230,21 +152,21 @@ let
                     visited
                 else 
                     let
-                        queueCmp = func(a, b) len(a.path) + dist(a.coords, end) < len(b.path) + dist(b.coords, end) or
-                            (len(a.path) + dist(a.coords, end) is len(b.path) + dist(b.coords, end) and len(a.path) >= len(b.path)),
-                        queue = push(queue, {
+                        queueCmp = func(a, b) len(a.path) + utils.dist(a.coords, end) < len(b.path) + utils.dist(b.coords, end) or
+                            (len(a.path) + utils.dist(a.coords, end) is len(b.path) + utils.dist(b.coords, end) and len(a.path) >= len(b.path)),
+                        queue = utils.push(queue, {
                             coords: {x: x-1, y: y},
                             path: append(pathSoFar, DIR_LEFT)
                         }, queueCmp),
-                        queue = push(queue, {
+                        queue = utils.push(queue, {
                             coords: {x: x, y: y-1},
                             path: append(pathSoFar, DIR_UP)
                         }, queueCmp),
-                        queue = push(queue, {
+                        queue = utils.push(queue, {
                             coords: {x: x+1, y: y},
                             path: append(pathSoFar, DIR_RIGHT)   
                         }, queueCmp),
-                        queue = push(queue, {
+                        queue = utils.push(queue, {
                             coords: {x: x, y: y+1},
                             path: append(pathSoFar, DIR_DOWN)
                         }, queueCmp)
@@ -255,7 +177,7 @@ let
 
     drawFinishedMazeHelper = func(maze, coords, path)
         let
-            dottedMaze = withIdxAs(maze, coords.y, withIdxAs(maze[coords.y], coords.x, "."))
+            dottedMaze = utils.withIdxAs(maze, coords.y, utils.withIdxAs(maze[coords.y], coords.x, "."))
         in
             if len(path) is 0 then
                 dottedMaze
@@ -275,14 +197,14 @@ let
                         y: coords.y + 1
                     } else false
                 in
-                    if newCoords is false then [] else drawFinishedMazeHelper(dottedMaze, newCoords, tail(path)),
+                    if newCoords is false then [] else drawFinishedMazeHelper(dottedMaze, newCoords, utils.tail(path)),
 
     drawFinishedMaze = func(maze, path)
         let rawMaze = (mazeTileString(tile) for tile in row) for row in maze,
             coords = findStart(maze)
         in
-            concatAll(
-                concatAll(
+            utils.concatAll(
+                utils.concatAll(
                     append(rowStrs, "\n")
                 ) for rowStrs in drawFinishedMazeHelper(rawMaze, coords, path)),
 
