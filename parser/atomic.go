@@ -236,10 +236,7 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 			exp = &FieldAccessExpression{
 				Object: exp,
 				Field:  tok.Value,
-				loc: models.SourceLocation{
-					LineNumber:   exp.SourceLocation().LineNumber,
-					ColumnNumber: exp.SourceLocation().ColumnNumber,
-				},
+				loc:    exp.SourceLocation(),
 			}
 		}
 	}

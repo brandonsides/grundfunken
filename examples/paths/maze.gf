@@ -1,45 +1,7 @@
 let
-    utils = import("utils.gf"),
-
-    // tile types
-    TILE_TYPE_EMPTY = 0,
-    TILE_TYPE_WALL = 1,
-    TILE_TYPE_START = 2,
-    TILE_TYPE_END = 3,
-    TILE_TYPE_PATH = 4,
-
-    // directions
-    DIR_LEFT = 0,
-    DIR_UP = 1,
-    DIR_RIGHT = 2,
-    DIR_DOWN = 3,
-
-    // maze utils
-    mazeTileString = func(tile)
-        if tile is TILE_TYPE_EMPTY then
-            " "
-        else if tile is TILE_TYPE_WALL then
-            "#"
-        else if tile is TILE_TYPE_START then
-            "S"
-        else if tile is TILE_TYPE_END then
-            "E"
-        else if tile is TILE_TYPE_PATH then
-            "."
-        else
-            "?",
-
-    dirString = func(dir)
-        if dir is DIR_LEFT then
-            "L"
-        else if dir is DIR_UP then
-            "U"
-        else if dir is DIR_RIGHT then
-            "R"
-        else if dir is DIR_DOWN then
-            "D"
-        else
-            "?",
+    utils = import("../utils.gf"),
+    tiles = import("tiles.gf"),
+    directions = import("directions.gf"),
 
     mazeRowString = func(mazeRow, visitedRow, curX)
         let
@@ -49,10 +11,10 @@ let
                 let
                     tileStr = if x is curX then
                         "-"
-                    else if mazeRow[x] is TILE_TYPE_EMPTY and isVisited(x) then
+                    else if mazeRow[x] is tiles.types.EMPTY and isVisited(x) then
                         toString(len(visitedRow[x]))
                     else
-                        mazeTileString(mazeRow[x])
+                        tiles.toString(mazeRow[x])
                 in
                     concatStr(tileStr, utils.concatAll(
                         " " for _ in range(0, 4 - lenStr(tileStr))
@@ -63,7 +25,7 @@ let
         utils.concatAll(
             concatStr(mazeRowString(maze[i], visited[i], if i is curY then curX else false), "\n\n") for i in range(0, len(maze))
         ),
-    
+
     mazeRowWithCoordAs = func(mazeRow, x, tile)
         utils.withIdxAs(mazeRow, x, tile),
 
@@ -79,11 +41,11 @@ let
                     prepend(mazeRowWithCoordAs(curRow, x, tile), mazeRest)
                 else
                     prepend(curRow, mazeWithCoordsAs(mazeRest, x, y-1, tile)),
-    
+
     findStart = func(maze)
         let
             // in each row, try to find the start tile
-            startIdxForEachRow = utils.find(func(tile) tile is TILE_TYPE_START, row) for row in maze,
+            startIdxForEachRow = utils.find(func(tile) tile is tiles.types.START, row) for row in maze,
             // find the row with non-false start index; i.e. the row for which the start location was found
             startRow = utils.find(func(startIdxResult) startIdxResult is not false, startIdxForEachRow),
             startCol = startIdxForEachRow[startRow]
@@ -96,7 +58,7 @@ let
     findEnd = func(maze)
         let
             // in each row, try to find the start tile
-            endIdxForEachRow = utils.find(func(tile) tile is TILE_TYPE_END, row) for row in maze,
+            endIdxForEachRow = utils.find(func(tile) tile is tiles.types.END, row) for row in maze,
             // find the row with non-false start index; i.e. the row for which the start location was found
             endRow = utils.find(func(endIdxResult) endIdxResult is not false, endIdxForEachRow),
             endCol = endIdxForEachRow[endRow]
@@ -137,7 +99,7 @@ let
             tile = maze[y][x],
             isVisited = visited[y][x] is not false,
             bestPathFromStartSoFar = visited[y][x]
-        in if tile is TILE_TYPE_WALL or (
+        in if tile is tiles.types.WALL or (
                 isVisited and
                 len(bestPathFromStartSoFar) <= len(pathSoFar)
         ) then
@@ -148,7 +110,7 @@ let
                 // _ = input("press enter to continue")
                 _ = sleep(100)
             in
-                if tile is TILE_TYPE_END then
+                if tile is tiles.types.END then
                     visited
                 else 
                     let
@@ -156,19 +118,19 @@ let
                             (len(a.path) + utils.dist(a.coords, end) is len(b.path) + utils.dist(b.coords, end) and len(a.path) >= len(b.path)),
                         queue = utils.push(queue, {
                             coords: {x: x-1, y: y},
-                            path: append(pathSoFar, DIR_LEFT)
+                            path: append(pathSoFar, directions.LEFT)
                         }, queueCmp),
                         queue = utils.push(queue, {
                             coords: {x: x, y: y-1},
-                            path: append(pathSoFar, DIR_UP)
+                            path: append(pathSoFar, directions.UP)
                         }, queueCmp),
                         queue = utils.push(queue, {
                             coords: {x: x+1, y: y},
-                            path: append(pathSoFar, DIR_RIGHT)   
+                            path: append(pathSoFar, directions.RIGHT)   
                         }, queueCmp),
                         queue = utils.push(queue, {
                             coords: {x: x, y: y+1},
-                            path: append(pathSoFar, DIR_DOWN)
+                            path: append(pathSoFar, directions.DOWN)
                         }, queueCmp)
                     in
                         solveMazeHelper(maze, visited, queue, end),
@@ -183,16 +145,16 @@ let
                 dottedMaze
             else
                 let
-                    newCoords = if path[0] is DIR_LEFT then {
+                    newCoords = if path[0] is directions.LEFT then {
                         x: coords.x - 1,
                         y: coords.y
-                    } else if path[0] is DIR_UP then {
+                    } else if path[0] is directions.UP then {
                         x: coords.x,
                         y: coords.y - 1
-                    } else if path[0] is DIR_RIGHT then {
+                    } else if path[0] is directions.RIGHT then {
                         x: coords.x + 1,
                         y: coords.y
-                    } else if path[0] is DIR_DOWN then {
+                    } else if path[0] is directions.DOWN then {
                         x: coords.x,
                         y: coords.y + 1
                     } else false
@@ -200,7 +162,7 @@ let
                     if newCoords is false then [] else drawFinishedMazeHelper(dottedMaze, newCoords, utils.tail(path)),
 
     drawFinishedMaze = func(maze, path)
-        let rawMaze = (mazeTileString(tile) for tile in row) for row in maze,
+        let rawMaze = (tiles.toString(tile) for tile in row) for row in maze,
             coords = findStart(maze)
         in
             utils.concatAll(
@@ -217,37 +179,7 @@ let
                 path: []
             }], endCoords)
         in
-            bestPaths[endCoords.y][endCoords.x],
-
-    // maze
-    defaultMaze = [
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1],
-        [0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0],
-        [0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0],
-        [0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0],
-        [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0],
-        [1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0],
-        [0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1],
-        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-        [0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1],
-        [0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-        [0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0],
-        [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-        [1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1],
-        [0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 3, 0, 0],
-        [1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0],
-        [0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0]
-    ],
-    
-    res = solveMaze(defaultMaze)
-in
-    if res is false then
-        false
-    else
-        concatStr("\n", drawFinishedMaze(defaultMaze, res))
+            bestPaths[endCoords.y][endCoords.x]
+in {
+    solveMaze: solveMaze,
+}
