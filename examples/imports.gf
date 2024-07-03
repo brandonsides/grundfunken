@@ -1,0 +1,1 @@
+let coins = import("examples/coins.gf") in coins.optimal

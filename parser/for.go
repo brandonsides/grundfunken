@@ -52,47 +52,53 @@ func (fe *ForExpression) SourceLocation() models.SourceLocation {
 	return fe.loc
 }
 
-func parseForExpression(exp1 models.Expression, toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) == 0 {
-		return exp1, toks, nil
-	}
+func parseForExpression(exp1 models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	beginLoc := toks.CurrentSourceLocation()
 
-	if toks[0].Type != tokens.FOR {
-		return exp1, toks, nil
+	tok, ok := toks.Peek()
+	if !ok {
+		return exp1, nil
 	}
+	if tok.Type != tokens.FOR {
+		return exp1, nil
+	}
+	toks.Pop()
 
-	rest = toks[1:]
-	if len(rest) == 0 {
-		return nil, rest, &models.InterpreterError{
-			Message: "unexpected end of input",
+	tok, innerErr := toks.Pop()
+	if innerErr != nil {
+		return nil, &models.InterpreterError{
+			Message:        "expected for clause",
+			Underlying:     innerErr,
+			SourceLocation: toks.CurrentSourceLocation(),
+		}
+	}
+	identifier := tok.Value
+
+	tok, ok = toks.Peek()
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        "expected in clause",
+			SourceLocation: toks.CurrentSourceLocation(),
 		}
 	}
 
-	identifier := rest[0].Value
-	rest = rest[1:]
-	if len(rest) == 0 {
-		return nil, rest, &models.InterpreterError{
-			Message: "unexpected end of input",
+	if tok.Type != tokens.IN {
+		return nil, &models.InterpreterError{
+			Message:        "unexpected token; expected in clause",
+			SourceLocation: tok.SourceLocation,
 		}
 	}
+	toks.Pop()
 
-	if rest[0].Type != tokens.IN {
-		return nil, rest, &models.InterpreterError{
-			Message:        "unexpected token",
-			SourceLocation: rest[0].SourceLocation,
-		}
-	}
-
-	rest = rest[1:]
-	exp2, rest, err := ParseExpression(rest)
+	exp2, err := ParseExpression(toks)
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
 
 	return &ForExpression{
 		ForClause:  exp1,
 		Identifier: identifier,
 		InClause:   exp2,
-		loc:        toks[0].SourceLocation,
-	}, rest, nil
+		loc:        beginLoc,
+	}, nil
 }

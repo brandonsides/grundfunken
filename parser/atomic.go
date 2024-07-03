@@ -7,175 +7,247 @@ import (
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
-func parseAtomic(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) == 0 {
-		return nil, toks, &models.InterpreterError{
-			Message: "expected token",
+func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	beginLoc := toks.CurrentSourceLocation()
+
+	tok, ok := toks.Peek()
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        "expected expression",
+			SourceLocation: toks.CurrentSourceLocation(),
 		}
 	}
 
-	switch toks[0].Type {
+	switch tok.Type {
 	case tokens.FUNC:
-		exp, rest, err = parseFunction(toks)
+		exp, err = parseFunction(toks)
 	case tokens.LEFT_PAREN:
-		rest = toks[1:]
-		exp, rest, err = ParseExpression(rest)
+		toks.Pop()
+		exp, err = ParseExpression(toks)
 		if err != nil {
-			return nil, rest, err
+			return nil, err
 		}
-		if len(rest) == 0 {
-			return nil, rest, &models.InterpreterError{
-				Message: "expected closing parenthesis",
-			}
-		}
-		if rest[0].Type != tokens.RIGHT_PAREN {
-			return nil, rest, &models.InterpreterError{
+		tok, err := toks.Pop()
+		if err != nil {
+			return nil, &models.InterpreterError{
 				Message:        "expected closing parenthesis",
-				SourceLocation: rest[0].SourceLocation,
+				SourceLocation: exp.SourceLocation(),
 			}
 		}
-		rest = rest[1:]
+
+		if tok.Type != tokens.RIGHT_PAREN {
+			return nil, &models.InterpreterError{
+				Message:        "expected closing parenthesis",
+				SourceLocation: tok.SourceLocation,
+			}
+		}
 	case tokens.NUMBER, tokens.MINUS:
 		var numStr string
-		rest = toks
-		if toks[0].Type == tokens.MINUS {
-			rest = toks[1:]
-			if len(rest) == 0 {
-				return nil, rest, &models.InterpreterError{
-					Message: "unexpected end of input",
+
+		tok, innerErr := toks.Pop()
+		if innerErr != nil {
+			return nil, &models.InterpreterError{
+				Message:        "expected number",
+				SourceLocation: toks.CurrentSourceLocation(),
+				Underlying:     innerErr,
+			}
+		}
+
+		if tok.Type == tokens.MINUS {
+			numStr = "-"
+			tok, innerErr = toks.Pop()
+			if innerErr != nil {
+				return nil, &models.InterpreterError{
+					Message:        "expected number",
+					SourceLocation: toks.CurrentSourceLocation(),
+					Underlying:     innerErr,
 				}
 			}
-
-			numStr = "-"
 		}
 
-		if rest[0].Type != tokens.NUMBER {
-			return nil, rest, &models.InterpreterError{
-				Message:        "unexpected token",
-				SourceLocation: rest[0].SourceLocation,
+		if tok.Type != tokens.NUMBER {
+			return nil, &models.InterpreterError{
+				Message:        "unexpected token; expected number",
+				SourceLocation: tok.SourceLocation,
 			}
 		}
 
-		numStr += rest[0].Value
-		rest = rest[1:]
+		numStr += tok.Value
 
 		ret, innerErr := strconv.Atoi(numStr)
 		if innerErr != nil {
-			return nil, toks[1:], &models.InterpreterError{
+			return nil, &models.InterpreterError{
 				Message:        "failed to parse number literal",
 				Underlying:     innerErr,
-				SourceLocation: toks[0].SourceLocation,
+				SourceLocation: tok.SourceLocation,
 			}
 		}
 
 		exp = &LiteralExpression{
 			val: ret,
-			loc: toks[0].SourceLocation,
+			loc: tok.SourceLocation,
 		}
 	case tokens.IDENTIFIER:
-		if toks[0].Value == "true" {
-			exp, rest, err = &LiteralExpression{
+		tok, innerErr := toks.Pop()
+		if innerErr != nil {
+			return nil, &models.InterpreterError{
+				Message:        "expected identifier",
+				SourceLocation: toks.CurrentSourceLocation(),
+				Underlying:     innerErr,
+			}
+		}
+
+		if tok.Value == "true" {
+			exp, err = &LiteralExpression{
 				val: true,
-				loc: toks[0].SourceLocation,
-			}, toks[1:], nil
-		} else if toks[0].Value == "false" {
-			exp, rest, err = &LiteralExpression{
+				loc: tok.SourceLocation,
+			}, nil
+		} else if tok.Value == "false" {
+			exp, err = &LiteralExpression{
 				val: false,
-				loc: toks[0].SourceLocation,
-			}, toks[1:], nil
+				loc: tok.SourceLocation,
+			}, nil
 		} else {
-			exp, rest, err = &IdentifierExpression{
-				name: toks[0].Value,
-				loc:  toks[0].SourceLocation,
-			}, toks[1:], nil
+			exp, err = &IdentifierExpression{
+				name: tok.Value,
+				loc:  tok.SourceLocation,
+			}, nil
 		}
 	case tokens.LEFT_SQUARE_BRACKET:
-		exp, rest, err = parseArrayLiteral(toks)
+		exp, err = parseArrayLiteral(toks)
 	case tokens.LEFT_SQUIGGLY_BRACKET:
-		exp, rest, err = parseObjectLiteralExpression(toks)
+		exp, err = parseObjectLiteralExpression(toks)
 	case tokens.STRING:
-		exp, rest, err = &LiteralExpression{
-			val: toks[0].Value,
-			loc: toks[0].SourceLocation,
-		}, toks[1:], nil
+		tok, innerErr := toks.Pop()
+		if innerErr != nil {
+			return nil, &models.InterpreterError{
+				Message:        "expected string",
+				SourceLocation: toks.CurrentSourceLocation(),
+				Underlying:     innerErr,
+			}
+		}
+		exp, err = &LiteralExpression{
+			val: tok.Value,
+			loc: tok.SourceLocation,
+		}, nil
 	case tokens.LET:
-		exp, rest, err = parseLetExpression(toks)
+		exp, err = parseLetExpression(toks)
 	case tokens.IF:
-		exp, rest, err = parseIfExpression(toks)
+		exp, err = parseIfExpression(toks)
 	default:
-		return nil, toks, nil
+		return nil, nil
 	}
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
 
-	for len(rest) != 0 && (rest[0].Type == tokens.LEFT_SQUARE_BRACKET || rest[0].Type == tokens.LEFT_PAREN || rest[0].Type == tokens.DOT) {
-		tok := rest[0]
-		rest = rest[1:]
-
+	for tok, ok := toks.Peek(); ok && (tok.Type == tokens.LEFT_SQUARE_BRACKET || tok.Type == tokens.LEFT_PAREN || tok.Type == tokens.DOT); tok, ok = toks.Peek() {
 		switch tok.Type {
 		case tokens.LEFT_PAREN:
+			parenLoc := tok.SourceLocation
 			var exps []models.Expression
-			exps, rest, err = parseExpressions(rest)
+
+			toks.Pop()
+			exps, err = parseExpressions(toks)
 			if err != nil {
-				return nil, rest, err
+				return nil, err
 			}
-			if rest[0].Type != tokens.RIGHT_PAREN {
-				return nil, rest, &models.InterpreterError{
-					Message:        "unexpected token",
-					SourceLocation: rest[0].SourceLocation,
+
+			tok, innerErr := toks.Pop()
+			if innerErr != nil {
+				return nil, &models.InterpreterError{
+					Message:        "to terminate function call",
+					SourceLocation: parenLoc,
+					Underlying: &models.InterpreterError{
+						Message:        "expected closing parenthesis",
+						SourceLocation: toks.CurrentSourceLocation(),
+						Underlying:     innerErr,
+					},
 				}
 			}
-			rest = rest[1:]
+			if tok.Type != tokens.RIGHT_PAREN {
+				return nil, &models.InterpreterError{
+					Message:        "to terminate function call",
+					SourceLocation: parenLoc,
+					Underlying: &models.InterpreterError{
+						Message:        "unexpected token; expected closing parenthesis",
+						SourceLocation: tok.SourceLocation,
+					},
+				}
+			}
 			exp = &FunctionCallExpression{
 				Function: exp,
 				Args:     exps,
-				loc:      toks[0].SourceLocation,
+				loc:      beginLoc,
 			}
 		case tokens.LEFT_SQUARE_BRACKET:
-			exp, rest, err = parseArrayIndex(exp, rest)
+			bracketLoc := tok.SourceLocation
+
+			toks.Pop()
+			exp, err = parseArrayIndex(exp, toks)
 			if err != nil {
-				return nil, rest, err
+				return nil, err
 			}
-			if len(rest) == 0 {
-				return nil, rest, &models.InterpreterError{
-					Message: "unexpected end of input",
+
+			tok, innerErr := toks.Pop()
+			if innerErr != nil {
+				return nil, &models.InterpreterError{
+					Message:        "to terminate array index",
+					SourceLocation: bracketLoc,
+					Underlying: &models.InterpreterError{
+						Message:        "expected closing square bracket",
+						SourceLocation: exp.SourceLocation(),
+					},
 				}
 			}
-			if rest[0].Type != tokens.RIGHT_SQUARE_BRACKET {
-				return nil, rest, &models.InterpreterError{
-					Message:        "unexpected token",
-					SourceLocation: rest[0].SourceLocation,
+			if tok.Type != tokens.RIGHT_SQUARE_BRACKET {
+				return nil, &models.InterpreterError{
+					Message:        "to terminate array index",
+					SourceLocation: bracketLoc,
+					Underlying: &models.InterpreterError{
+						Message:        "unexpected token; expected closing square bracket",
+						SourceLocation: tok.SourceLocation,
+					},
 				}
 			}
-			rest = rest[1:]
 		case tokens.DOT:
-			if len(rest) == 0 {
-				return nil, rest, &models.InterpreterError{
-					Message: "unexpected end of input",
+			dotLoc := tok.SourceLocation
+			toks.Pop()
+
+			tok, innerErr := toks.Pop()
+			if innerErr != nil {
+				return nil, &models.InterpreterError{
+					Message:        "in object field access",
+					SourceLocation: dotLoc,
+					Underlying: &models.InterpreterError{
+						Message:        "expected identifier",
+						SourceLocation: toks.CurrentSourceLocation(),
+						Underlying:     innerErr,
+					},
 				}
 			}
-			if rest[0].Type != tokens.IDENTIFIER {
-				return nil, rest, &models.InterpreterError{
-					Message:        "unexpected token",
-					SourceLocation: rest[0].SourceLocation,
+
+			if tok.Type != tokens.IDENTIFIER {
+				return nil, &models.InterpreterError{
+					Message:        "unexpected token; expected identifier",
+					SourceLocation: tok.SourceLocation,
 				}
 			}
 			exp = &FieldAccessExpression{
-				Object: exp,
-				Field:  rest[0].Value,
-				loc: models.SourceLocation{
-					LineNumber:   exp.SourceLocation().LineNumber,
-					ColumnNumber: exp.SourceLocation().ColumnNumber,
-				},
+				Object:   exp,
+				Field:    tok.Value,
+				fieldLoc: tok.SourceLocation,
 			}
-			rest = rest[1:]
 		}
 	}
 
-	if len(rest) != 0 && rest[0].Type == tokens.FOR {
-		exp, rest, err = parseForExpression(exp, rest)
+	tok, ok = toks.Peek()
+	if ok && tok.Type == tokens.FOR {
+		exp, err = parseForExpression(exp, toks)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return exp, rest, err
+	return exp, err
 }

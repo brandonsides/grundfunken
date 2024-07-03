@@ -7,6 +7,7 @@ type InterpreterError struct {
 }
 
 type SourceLocation struct {
+	File         string
 	LineNumber   int
 	ColumnNumber int
 }

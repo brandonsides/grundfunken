@@ -56,86 +56,89 @@ func (fe *FunctionExpression) SourceLocation() models.SourceLocation {
 	return fe.loc
 }
 
-func parseFunction(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) == 0 {
-		return nil, toks, &models.InterpreterError{
-			Message: "unexpected end of input",
+func parseFunction(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	beginLoc := toks.CurrentSourceLocation()
+
+	tok, ok := toks.Peek()
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        "expected function declaration",
+			SourceLocation: toks.CurrentSourceLocation(),
 		}
 	}
 
-	if toks[0].Type != tokens.FUNC {
-		return nil, toks, &models.InterpreterError{
-			Message:        "unexpected token",
-			SourceLocation: toks[0].SourceLocation,
+	if tok.Type != tokens.FUNC {
+		return nil, &models.InterpreterError{
+			Message:        "unexpected token; expected function declaration",
+			SourceLocation: tok.SourceLocation,
+		}
+	}
+	toks.Pop()
+
+	tok, ok = toks.Peek()
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        "expected argument list",
+			SourceLocation: toks.CurrentSourceLocation(),
 		}
 	}
 
-	rest = toks[1:]
-	if len(rest) == 0 {
-		return nil, rest, &models.InterpreterError{
-			Message: "unexpected end of input",
+	if tok.Type != tokens.LEFT_PAREN {
+		return nil, &models.InterpreterError{
+			Message:        "unexpected token; expected left parenthesis",
+			SourceLocation: tok.SourceLocation,
 		}
 	}
+	toks.Pop()
 
-	if rest[0].Type != tokens.LEFT_PAREN {
-		return nil, rest, &models.InterpreterError{
-			Message:        "unexpected token",
-			SourceLocation: rest[0].SourceLocation,
-		}
-	}
-
-	rest = rest[1:]
 	args := make([]string, 0)
-	for len(rest) > 0 {
-		if rest[0].Type == tokens.RIGHT_PAREN {
+	var popErr error
+	for tok, popErr = toks.Pop(); popErr == nil; tok, popErr = toks.Pop() {
+		if tok.Type == tokens.RIGHT_PAREN {
 			break
 		}
 
-		if rest[0].Type != tokens.IDENTIFIER {
-			return nil, rest, &models.InterpreterError{
-				Message:        "unexpected token",
-				SourceLocation: rest[0].SourceLocation,
+		if tok.Type != tokens.IDENTIFIER {
+			return nil, &models.InterpreterError{
+				Message:        "unexpected token; expected identifier",
+				SourceLocation: tok.SourceLocation,
+			}
+		}
+		args = append(args, tok.Value)
+
+		tok, popErr := toks.Pop()
+		if popErr != nil {
+			return nil, &models.InterpreterError{
+				Message:        "after comma",
+				SourceLocation: tok.SourceLocation,
+				Underlying: &models.InterpreterError{
+					Message:        "expected new argument",
+					Underlying:     popErr,
+					SourceLocation: tok.SourceLocation,
+				},
 			}
 		}
 
-		args = append(args, rest[0].Value)
-		rest = rest[1:]
-		if len(rest) == 0 {
-			return nil, rest, &models.InterpreterError{
-				Message: "unexpected end of input",
-			}
-		}
-
-		if rest[0].Type == tokens.RIGHT_PAREN {
+		if tok.Type == tokens.RIGHT_PAREN {
 			break
 		}
 
-		if rest[0].Type != tokens.COMMA {
-			return nil, rest, &models.InterpreterError{
-				Message:        "unexpected token",
-				SourceLocation: rest[0].SourceLocation,
+		if tok.Type != tokens.COMMA {
+			return nil, &models.InterpreterError{
+				Message:        "unexpected token; expected comma or closing parenthesis",
+				SourceLocation: tok.SourceLocation,
 			}
 		}
-
-		rest = rest[1:]
 	}
 
-	if len(rest) == 0 {
-		return nil, rest, &models.InterpreterError{
-			Message: "unexpected end of input",
-		}
-	}
-
-	rest = rest[1:]
-
-	exp, rest, err = ParseExpression(rest)
+	exp, err = ParseExpression(toks)
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
 
 	return &FunctionExpression{
 		args: args,
 		body: exp,
-		loc:  toks[0].SourceLocation,
-	}, rest, nil
+		loc:  beginLoc,
+	}, nil
 }

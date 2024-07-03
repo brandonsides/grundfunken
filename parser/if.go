@@ -39,68 +39,92 @@ func (ie *IfExpression) SourceLocation() models.SourceLocation {
 	return ie.loc
 }
 
-func parseIfExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) == 0 {
-		return nil, toks, &models.InterpreterError{
-			Message: "unexpected end of input",
+func parseIfExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	beginLoc := toks.CurrentSourceLocation()
+
+	tok, ok := toks.Peek()
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        "expected \"if\" expression",
+			SourceLocation: toks.CurrentSourceLocation(),
 		}
 	}
 
-	if toks[0].Type != tokens.IF {
-		return nil, toks, &models.InterpreterError{
-			Message:        "unexpected token",
-			SourceLocation: toks[0].SourceLocation,
+	if tok.Type != tokens.IF {
+		return nil, &models.InterpreterError{
+			Message:        "unexpected token; expected \"if\" clause",
+			SourceLocation: tok.SourceLocation,
 		}
 	}
+	toks.Pop()
 
-	rest = toks[1:]
-	exp1, rest, err := ParseExpression(rest)
+	exp1, err := ParseExpression(toks)
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
 
-	if len(rest) == 0 {
-		return nil, rest, &models.InterpreterError{
-			Message: "unexpected end of input",
+	tok, ok = toks.Peek()
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        "in \"if\" expression",
+			SourceLocation: beginLoc,
+			Underlying: &models.InterpreterError{
+				Message:        "expected \"then\" clause",
+				SourceLocation: toks.CurrentSourceLocation(),
+			},
 		}
 	}
 
-	if rest[0].Type != tokens.THEN {
-		return nil, rest, &models.InterpreterError{
-			Message:        "unexpected token",
-			SourceLocation: rest[0].SourceLocation,
+	if tok.Type != tokens.THEN {
+		return nil, &models.InterpreterError{
+			Message:        "in \"if\" expression",
+			SourceLocation: beginLoc,
+			Underlying: &models.InterpreterError{
+				Message:        "unexpected token; expected \"then\" clause",
+				SourceLocation: tok.SourceLocation,
+			},
 		}
 	}
+	toks.Pop()
 
-	rest = rest[1:]
-	exp2, rest, err := ParseExpression(rest)
+	exp2, err := ParseExpression(toks)
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
 
-	if len(rest) == 0 {
-		return nil, rest, &models.InterpreterError{
-			Message: "unexpected end of input",
+	tok, ok = toks.Peek()
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        "in \"if\" expression",
+			SourceLocation: beginLoc,
+			Underlying: &models.InterpreterError{
+				Message:        "expected \"else\" clause",
+				SourceLocation: toks.CurrentSourceLocation(),
+			},
 		}
 	}
 
-	if rest[0].Type != tokens.ELSE {
-		return nil, rest, &models.InterpreterError{
-			Message:        "unexpected token",
-			SourceLocation: rest[0].SourceLocation,
+	if tok.Type != tokens.ELSE {
+		return nil, &models.InterpreterError{
+			Message:        "in \"if\" expression",
+			SourceLocation: beginLoc,
+			Underlying: &models.InterpreterError{
+				Message:        "unexpected token; expected \"else\" clause",
+				SourceLocation: tok.SourceLocation,
+			},
 		}
 	}
+	toks.Pop()
 
-	rest = rest[1:]
-	exp3, rest, err := ParseExpression(rest)
+	exp3, err := ParseExpression(toks)
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
 
 	return &IfExpression{
 		Condition: exp1,
 		Then:      exp2,
 		Else:      exp3,
-		loc:       toks[0].SourceLocation,
-	}, rest, nil
+		loc:       beginLoc,
+	}, nil
 }

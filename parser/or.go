@@ -48,31 +48,29 @@ func (oe *OrExpression) SourceLocation() models.SourceLocation {
 	return oe.Left.SourceLocation()
 }
 
-func parseOrExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	left, rest, err := parseAndExpression(toks)
+func parseOrExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	left, err := parseAndExpression(toks)
 	if err != nil {
-		return nil, toks, err
-	}
-	if len(rest) == 0 {
-		return left, rest, nil
+		return nil, err
 	}
 
-	return foldOr(left, rest)
+	return foldOr(left, toks)
 }
 
-func foldOr(first models.Expression, toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) == 0 || toks[0].Type != tokens.OR {
-		return first, toks, nil
+func foldOr(first models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	tok, ok := toks.Peek()
+	if !ok || tok.Type != tokens.OR {
+		return first, nil
 	}
-	rest = toks[1:]
+	toks.Pop()
 
-	right, rest, err := parseOrExpression(rest)
+	right, err := parseOrExpression(toks)
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
 
 	return &OrExpression{
 		Left:  first,
 		Right: right,
-	}, rest, nil
+	}, nil
 }

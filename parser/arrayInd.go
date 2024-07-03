@@ -130,46 +130,51 @@ func (ase *ArraySliceExpression) SourceLocation() models.SourceLocation {
 	return ase.loc
 }
 
-func parseArrayIndex(arr models.Expression, toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) == 0 {
-		return nil, toks, &models.InterpreterError{
-			Message: "expected token",
+func parseArrayIndex(arr models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	beginLoc := toks.CurrentSourceLocation()
+
+	tok, ok := toks.Peek()
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        "expected array index expression",
+			SourceLocation: arr.SourceLocation(),
 		}
 	}
 
 	var idx *models.Expression
-	rest = toks
-	if toks[0].Type != tokens.COLON {
+	if tok.Type != tokens.COLON {
 		var idxVal models.Expression
-		idxVal, rest, err = ParseExpression(toks)
+		idxVal, err = ParseExpression(toks)
 		if err != nil {
-			return nil, toks, err
+			return nil, err
 		}
-		idx = &idxVal
-	}
-
-	if len(rest) == 0 {
-		return nil, rest, &models.InterpreterError{
-			Message: "unexpected end of input",
+		if idxVal != nil {
+			idx = &idxVal
 		}
 	}
 
-	if rest[0].Type == tokens.COLON {
-		rest = rest[1:]
-
-		if len(rest) == 0 {
-			return nil, rest, &models.InterpreterError{
-				Message: "unexpected end of input",
-			}
+	tok, ok = toks.Peek()
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        "to terminate array index",
+			SourceLocation: beginLoc,
+			Underlying: &models.InterpreterError{
+				Message:        "expected right square bracket",
+				SourceLocation: arr.SourceLocation(),
+			},
 		}
+	}
+
+	if tok.Type == tokens.COLON {
+		toks.Pop()
 
 		var idx2 *models.Expression
-		if rest[0].Type != tokens.RIGHT_SQUARE_BRACKET {
-			var idxVal models.Expression
-			idxVal, rest, err = ParseExpression(rest)
-			if err != nil {
-				return nil, rest, err
-			}
+		var idxVal models.Expression
+		idxVal, err = ParseExpression(toks)
+		if err != nil {
+			return nil, err
+		}
+		if idxVal != nil {
 			idx2 = &idxVal
 		}
 
@@ -178,11 +183,19 @@ func parseArrayIndex(arr models.Expression, toks []tokens.Token) (exp models.Exp
 			Begin: idx,
 			End:   idx2,
 			loc:   arr.SourceLocation(),
-		}, rest, nil
+		}, nil
 	}
+
+	if idx == nil {
+		return nil, &models.InterpreterError{
+			Message:        "expected array index expression",
+			SourceLocation: beginLoc,
+		}
+	}
+
 	return &ArrayAccessExpression{
 		Array: arr,
 		Index: *idx,
 		loc:   arr.SourceLocation(),
-	}, rest, nil
+	}, nil
 }

@@ -51,73 +51,67 @@ func (ee *EqExpression) SourceLocation() models.SourceLocation {
 	return ee.Left.SourceLocation()
 }
 
-func parseEqExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	left, rest, err := parseCmpExpression(toks)
+func parseEqExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	left, err := parseCmpExpression(toks)
 	if err != nil {
-		return nil, toks, err
-	}
-	if len(rest) == 0 {
-		return left, rest, nil
+		return nil, err
 	}
 
-	return foldEq(left, rest)
+	return foldEq(left, toks)
 }
 
-func foldEq(first models.Expression, toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) == 0 {
-		return first, toks, nil
-	}
-
+func foldEq(first models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
 	var op *EqOp
-	op, rest, err = parseEqOp(toks)
+	op, err = parseEqOp(toks)
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	} else if op == nil {
-		return first, toks, nil
+		return first, nil
 	}
 
-	right, rest, err := parseEqExpression(rest)
+	right, err := parseEqExpression(toks)
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
 
 	return &EqExpression{
 		Left:  first,
 		Op:    *op,
 		Right: right,
-	}, rest, nil
+	}, nil
 }
 
-func parseEqOp(toks []tokens.Token) (op *EqOp, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) == 0 {
-		return nil, toks, &models.InterpreterError{
-			Message: "unexpected end of input",
+func parseEqOp(toks *tokens.TokenStack) (op *EqOp, err *models.InterpreterError) {
+	beginLoc := toks.CurrentSourceLocation()
+	tok, ok := toks.Peek()
+	if !ok || tok.Type != tokens.IS {
+		return nil, nil
+	}
+	toks.Pop()
+
+	tok, ok = toks.Peek()
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        "after \"is\" operator",
+			SourceLocation: beginLoc,
+			Underlying: &models.InterpreterError{
+				Message:        "expected expression",
+				SourceLocation: toks.CurrentSourceLocation(),
+			},
 		}
 	}
-
-	if toks[0].Type != tokens.IS {
-		return nil, toks, nil
-	}
-	rest = toks[1:]
-
-	if len(rest) == 0 {
-		return nil, rest, &models.InterpreterError{
-			Message: "unexpected end of input",
-		}
-	}
-
-	if rest[0].Type == tokens.NOT {
+	if tok.Type == tokens.NOT {
+		toks.Pop()
 		op = &EqOp{
 			Type:           EQ_OP_NOT_EQUAL,
-			SourceLocation: rest[0].SourceLocation,
+			SourceLocation: tok.SourceLocation,
 		}
-		rest = rest[1:]
 	} else {
 		op = &EqOp{
 			Type:           EQ_OP_EQUAL,
-			SourceLocation: rest[0].SourceLocation,
+			SourceLocation: tok.SourceLocation,
 		}
 	}
 
-	return op, rest, nil
+	return op, nil
 }

@@ -28,36 +28,58 @@ func (ale *ArrayLiteralExpression) SourceLocation() models.SourceLocation {
 	return ale.loc
 }
 
-func parseArrayLiteral(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) == 0 {
-		return nil, toks, &models.InterpreterError{
-			Message: "unexpected end of input",
+func parseArrayLiteral(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	beginSourceLocation := toks.CurrentSourceLocation()
+
+	tok, ok := toks.Peek()
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        "unexpected end of input",
+			SourceLocation: toks.CurrentSourceLocation(),
 		}
 	}
 
-	if toks[0].Type != tokens.LEFT_SQUARE_BRACKET {
-		return nil, toks, &models.InterpreterError{
+	if tok.Type != tokens.LEFT_SQUARE_BRACKET {
+		return nil, &models.InterpreterError{
 			Message:        "unexpected token",
-			SourceLocation: toks[0].SourceLocation,
+			SourceLocation: tok.SourceLocation,
 		}
 	}
+	toks.Pop()
 
-	rest = toks[1:]
-	exps, rest, err := parseExpressions(rest)
+	exps, err := parseExpressions(toks)
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
-	if rest[0].Type != tokens.RIGHT_SQUARE_BRACKET {
-		return nil, rest, &models.InterpreterError{
-			Message:        "unexpected token",
-			SourceLocation: rest[0].SourceLocation,
+
+	tok, innerErr := toks.Pop()
+	if innerErr != nil {
+		return nil, &models.InterpreterError{
+			Message:        "to terminate array literal",
+			SourceLocation: beginSourceLocation,
+			Underlying: &models.InterpreterError{
+				Message:        "expected closing square bracket",
+				Underlying:     innerErr,
+				SourceLocation: toks.CurrentSourceLocation(),
+			},
 		}
 	}
-	rest = rest[1:]
+
+	if tok.Type != tokens.RIGHT_SQUARE_BRACKET {
+		return nil, &models.InterpreterError{
+			Message:        "to terminate array literal",
+			SourceLocation: beginSourceLocation,
+			Underlying: &models.InterpreterError{
+				Message:        "unexpected token; expected closing square bracket",
+				SourceLocation: tok.SourceLocation,
+			},
+		}
+	}
+
 	exp = &ArrayLiteralExpression{
 		val: exps,
-		loc: toks[0].SourceLocation,
+		loc: beginSourceLocation,
 	}
 
-	return exp, rest, nil
+	return exp, nil
 }

@@ -55,39 +55,34 @@ func (ae *AddExpression) SourceLocation() models.SourceLocation {
 	return ae.first.SourceLocation()
 }
 
-func parseAddExpression(toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	exp, rest, err = parseMulExpression(toks)
+func parseAddExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	exp, err = parseMulExpression(toks)
 	if err != nil {
-		return nil, rest, err
+		return nil, err
 	}
 
-	return foldAdd(exp, rest)
+	return foldAdd(exp, toks)
 }
 
-func foldAdd(first models.Expression, toks []tokens.Token) (exp models.Expression, rest []tokens.Token, err *models.InterpreterError) {
-	if len(toks) == 0 {
-		return first, toks, nil
+func foldAdd(first models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+	tok, ok := toks.Peek()
+	if !ok || tok.Type != tokens.PLUS && tok.Type != tokens.MINUS {
+		return first, nil
 	}
-
-	if toks[0].Type != tokens.PLUS && toks[0].Type != tokens.MINUS {
-		return first, toks, nil
-	}
-	op := toks[0]
-
-	rest = toks[1:]
+	toks.Pop()
 
 	var withNext models.Expression
 	var next models.Expression
-	next, rest, err = parseMulExpression(rest)
+	next, err = parseMulExpression(toks)
 	if err != nil {
-		return first, rest, err
+		return first, err
 	}
 
 	withNext = &AddExpression{
-		op:     op,
+		op:     tok,
 		first:  first,
 		second: next,
 	}
 
-	return foldAdd(withNext, rest)
+	return foldAdd(withNext, toks)
 }
