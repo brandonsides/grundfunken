@@ -234,9 +234,9 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 				}
 			}
 			exp = &FieldAccessExpression{
-				Object: exp,
-				Field:  tok.Value,
-				loc:    exp.SourceLocation(),
+				Object:   exp,
+				Field:    tok.Value,
+				fieldLoc: tok.SourceLocation,
 			}
 		}
 	}

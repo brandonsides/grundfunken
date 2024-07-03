@@ -7,9 +7,9 @@ import (
 )
 
 type FieldAccessExpression struct {
-	Object models.Expression
-	Field  string
-	loc    models.SourceLocation
+	Object   models.Expression
+	Field    string
+	fieldLoc models.SourceLocation
 }
 
 func (fae *FieldAccessExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
@@ -31,10 +31,10 @@ func (fae *FieldAccessExpression) Evaluate(bindings models.Bindings) (any, *mode
 
 	return nil, &models.InterpreterError{
 		Message:        "field not found",
-		SourceLocation: fae.loc,
+		SourceLocation: fae.fieldLoc,
 	}
 }
 
 func (fae *FieldAccessExpression) SourceLocation() models.SourceLocation {
-	return fae.loc
+	return fae.Object.SourceLocation()
 }

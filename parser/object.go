@@ -11,9 +11,16 @@ type ObjectLiteralExpression struct {
 }
 
 func (ole *ObjectLiteralExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+	newBindings := make(map[string]any)
+	for key, value := range bindings {
+		newBindings[key] = value
+	}
+
 	obj := make(map[string]any)
+	newBindings["this"] = obj
+
 	for key, value := range ole.Fields {
-		val, err := value.Evaluate(bindings)
+		val, err := value.Evaluate(newBindings)
 		if err != nil {
 			return nil, err
 		}
