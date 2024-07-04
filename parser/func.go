@@ -8,9 +8,10 @@ import (
 )
 
 type FunctionExpression struct {
-	args []string
-	body models.Expression
-	loc  models.SourceLocation
+	args     []string
+	argTypes []models.Expression
+	body     models.Expression
+	loc      models.SourceLocation
 }
 
 type FuncValue struct {
@@ -109,14 +110,20 @@ func parseFunction(toks *tokens.TokenStack) (exp models.Expression, err *models.
 			}
 		}
 		args = append(args, tok.Value)
+		argLoc := tok.SourceLocation
+
+		typeExp, err := ParseExpression(toks)
+		if err != nil {
+			return nil, err
+		}
 
 		tok, popErr := toks.Pop()
 		if popErr != nil {
 			return nil, &models.InterpreterError{
-				Message:        "after comma",
-				SourceLocation: tok.SourceLocation,
+				Message:        "after argument declaration",
+				SourceLocation: argLoc,
 				Underlying: &models.InterpreterError{
-					Message:        "expected new argument",
+					Message:        "expected comma",
 					Underlying:     popErr,
 					SourceLocation: tok.SourceLocation,
 				},

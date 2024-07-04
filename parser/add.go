@@ -51,6 +51,10 @@ func (ae *AddExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	}
 }
 
+func (ae *AddExpression) Type() models.Type {
+	return models.IntType
+}
+
 func (ae *AddExpression) SourceLocation() models.SourceLocation {
 	return ae.first.SourceLocation()
 }
