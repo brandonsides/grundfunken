@@ -55,7 +55,7 @@ var builtins = map[string]any{
 	"toString": &BuiltinFunction{
 		Argc: 1,
 		Fn: func(args []any) (any, error) {
-			return fmt.Sprintf("%v", args[0]), nil
+			return fmt.Sprint(args[0]), nil
 		},
 	},
 	"prepend": &BuiltinFunction{

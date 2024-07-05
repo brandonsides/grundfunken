@@ -91,14 +91,25 @@ func parseLetExpression(toks *tokens.TokenStack) (exp models.Expression, err *mo
 		identifierDeclLoc := tok.SourceLocation
 
 		tok, innerErr = toks.Pop()
-		if tok.Type != tokens.EQUAL {
+		if innerErr != nil {
 			return nil, &models.InterpreterError{
 				Message: "in let clause",
 				Underlying: &models.InterpreterError{
 					Message:        "expected equal sign",
-					SourceLocation: tok.SourceLocation,
+					SourceLocation: toks.CurrentSourceLocation(),
 					Underlying:     innerErr,
 				},
+				SourceLocation: beginLoc,
+			}
+		}
+		if tok.Type != tokens.EQUAL {
+			return nil, &models.InterpreterError{
+				Message: "in let clause",
+				Underlying: &models.InterpreterError{
+					Message:        "unexpected token; expected equal sign",
+					SourceLocation: tok.SourceLocation,
+				},
+				SourceLocation: beginLoc,
 			}
 		}
 

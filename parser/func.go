@@ -39,6 +39,10 @@ func (f FuncValue) Call(args []any) (any, error) {
 	return ret, nil
 }
 
+func (f *FuncValue) String() string {
+	return fmt.Sprintf("func(%v) { ... }", f.Exp.args)
+}
+
 func (fe *FunctionExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	// capture the current bindings
 	retBindings := make(models.Bindings)
