@@ -103,6 +103,17 @@ func interpret(inputFilePath string) (any, map[string][]string, error) {
 			return ret, err
 		},
 	}
+
+	var builtinTypes = map[string]models.Type{}
+	for k := range builtins {
+		builtinTypes[k] = models.PrimitiveTypeFunction
+	}
+
+	_, err = expression.Type(builtinTypes)
+	if err != nil {
+		return nil, lines, err
+	}
+
 	ret, err := expression.Evaluate(builtins)
 	if err != nil {
 		return ret, lines, err

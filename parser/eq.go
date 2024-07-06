@@ -23,7 +23,7 @@ const (
 	EQ_OP_NOT_EQUAL
 )
 
-func (ee *EqExpression) Type() (models.Type, *models.InterpreterError) {
+func (ee *EqExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
 	return models.PrimitiveTypeBool, nil
 }
 

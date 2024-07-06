@@ -14,7 +14,7 @@ type ForExpression struct {
 	loc        models.SourceLocation
 }
 
-func (fe *ForExpression) Type() (models.Type, *models.InterpreterError) {
+func (fe *ForExpression) Type(_ models.TypeBindings) (models.Type, *models.InterpreterError) {
 	return models.PrimitiveTypeList, nil
 }
 

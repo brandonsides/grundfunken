@@ -1,6 +1,9 @@
 package models
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 type InterpreterError struct {
 	Message        string
@@ -20,9 +23,11 @@ func (e *InterpreterError) Error() string {
 
 type Bindings map[string]any
 
+type TypeBindings map[string]Type
+
 type Expression interface {
 	Evaluate(Bindings) (any, *InterpreterError)
-	Type() (Type, *InterpreterError)
+	Type(TypeBindings) (Type, *InterpreterError)
 	SourceLocation() SourceLocation
 }
 
@@ -31,7 +36,9 @@ type Function interface {
 }
 
 type Type interface {
+	fmt.Stringer
 	Name() (string, error)
+	IsSuperTo(Type) bool
 }
 
 type PrimitiveType uint8
@@ -63,4 +70,19 @@ func (t PrimitiveType) Name() (string, error) {
 	default:
 		return "", errors.New("unknown primitive type")
 	}
+}
+
+func (t PrimitiveType) String() string {
+	name, err := t.Name()
+	if err != nil {
+		return "unknown"
+	}
+	return name
+}
+
+func (t PrimitiveType) IsSuperTo(other Type) bool {
+	if t == other || t == PrimitiveTypeAny {
+		return true
+	}
+	return false
 }

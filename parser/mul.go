@@ -13,6 +13,34 @@ type MulExpression struct {
 	second models.Expression
 }
 
+func (me *MulExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+	firstType, err := me.first.Type(tb)
+	if err != nil {
+		return nil, err
+	}
+
+	if firstType != models.PrimitiveTypeInt {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", me.op.Value, firstType),
+			SourceLocation: me.first.SourceLocation(),
+		}
+	}
+
+	secondType, err := me.second.Type(tb)
+	if err != nil {
+		return nil, err
+	}
+
+	if secondType != models.PrimitiveTypeInt {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", me.op.Value, secondType),
+			SourceLocation: me.second.SourceLocation(),
+		}
+	}
+
+	return models.PrimitiveTypeInt, nil
+}
+
 func (me *MulExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	v1, err := me.first.Evaluate(bindings)
 	if err != nil {

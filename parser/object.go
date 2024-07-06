@@ -10,6 +10,16 @@ type ObjectLiteralExpression struct {
 	loc    models.SourceLocation
 }
 
+func (ole *ObjectLiteralExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+	for _, value := range ole.Fields {
+		_, err := value.Type(tb)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return models.PrimitiveTypeObject, nil
+}
+
 func (ole *ObjectLiteralExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	newBindings := make(map[string]any)
 	for key, value := range bindings {

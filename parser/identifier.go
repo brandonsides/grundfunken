@@ -9,6 +9,17 @@ type IdentifierExpression struct {
 	loc  models.SourceLocation
 }
 
+func (ie *IdentifierExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+	if _, ok := tb[ie.name]; !ok {
+		return nil, &models.InterpreterError{
+			Message:        "cannot type unbound identifier",
+			SourceLocation: ie.loc,
+		}
+	}
+
+	return tb[ie.name], nil
+}
+
 func (ie *IdentifierExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	ret, ok := map[string]any(bindings)[ie.name]
 	if !ok {

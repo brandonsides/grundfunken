@@ -14,6 +14,36 @@ type IfExpression struct {
 	loc       models.SourceLocation
 }
 
+func (ie *IfExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+	condType, err := ie.Condition.Type(tb)
+	if err != nil {
+		return nil, err
+	}
+
+	if condType != models.PrimitiveTypeBool {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("if condition must evaluate to a boolean; got %s", condType),
+			SourceLocation: ie.Condition.SourceLocation(),
+		}
+	}
+
+	thenType, err := ie.Then.Type(tb)
+	if err != nil {
+		return nil, err
+	}
+
+	elseType, err := ie.Else.Type(tb)
+	if err != nil {
+		return nil, err
+	}
+
+	if thenType != elseType {
+		return models.PrimitiveTypeAny, nil
+	}
+
+	return thenType, nil
+}
+
 func (ie *IfExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	cond, err := ie.Condition.Evaluate(bindings)
 	if err != nil {

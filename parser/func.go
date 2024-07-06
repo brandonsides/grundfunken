@@ -8,10 +8,9 @@ import (
 )
 
 type FunctionExpression struct {
-	args     []string
-	argTypes []models.Expression
-	body     models.Expression
-	loc      models.SourceLocation
+	args []string
+	body models.Expression
+	loc  models.SourceLocation
 }
 
 type FuncValue struct {
@@ -42,6 +41,10 @@ func (f FuncValue) Call(args []any) (any, error) {
 
 func (f *FuncValue) String() string {
 	return fmt.Sprintf("func(%v) { ... }", f.Exp.args)
+}
+
+func (fe *FunctionExpression) Type(_ models.TypeBindings) (models.Type, *models.InterpreterError) {
+	return models.PrimitiveTypeFunction, nil
 }
 
 func (fe *FunctionExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
@@ -111,11 +114,6 @@ func parseFunction(toks *tokens.TokenStack) (exp models.Expression, err *models.
 		}
 		args = append(args, tok.Value)
 		argLoc := tok.SourceLocation
-
-		typeExp, err := ParseExpression(toks)
-		if err != nil {
-			return nil, err
-		}
 
 		tok, popErr := toks.Pop()
 		if popErr != nil {

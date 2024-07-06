@@ -16,6 +16,24 @@ type LetExpression struct {
 	InClause   models.Expression
 }
 
+func (le *LetExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+	newTB := make(models.TypeBindings)
+	for k, v := range tb {
+		newTB[k] = v
+	}
+
+	for _, bindingExp := range le.LetClauses {
+		t, err := bindingExp.Expression.Type(newTB)
+		if err != nil {
+			return nil, err
+		}
+
+		newTB[bindingExp.Identifier] = t
+	}
+
+	return le.InClause.Type(newTB)
+}
+
 func (le *LetExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	newBindings := make(models.Bindings)
 	for k, v := range bindings {

@@ -10,6 +10,22 @@ type NotExpression struct {
 	loc   models.SourceLocation
 }
 
+func (ne *NotExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+	innerType, err := ne.Inner.Type(tb)
+	if err != nil {
+		return nil, err
+	}
+
+	if innerType != models.PrimitiveTypeBool {
+		return nil, &models.InterpreterError{
+			Message:        "expected bool",
+			SourceLocation: ne.Inner.SourceLocation(),
+		}
+	}
+
+	return models.PrimitiveTypeBool, nil
+}
+
 func (ne *NotExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	v, err := ne.Inner.Evaluate(bindings)
 	if err != nil {

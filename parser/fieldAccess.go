@@ -12,10 +12,17 @@ type FieldAccessExpression struct {
 	fieldLoc models.SourceLocation
 }
 
-func (fae *FieldAccessExpression) Type() (models.Type, *models.InterpreterError) {
-	_, err := fae.Object.Type()
+func (fae *FieldAccessExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+	t, err := fae.Object.Type(tb)
 	if err != nil {
 		return nil, err
+	}
+
+	if t != models.PrimitiveTypeObject {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("cannot access field on type %s", t.String()),
+			SourceLocation: fae.Object.SourceLocation(),
+		}
 	}
 
 	return models.PrimitiveTypeAny, nil

@@ -12,6 +12,34 @@ type OrExpression struct {
 	Right models.Expression
 }
 
+func (oe *OrExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+	leftType, err := oe.Left.Type(tb)
+	if err != nil {
+		return nil, err
+	}
+
+	if leftType != models.PrimitiveTypeBool {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("operator 'or' cannot be applied to type %s", leftType),
+			SourceLocation: oe.Left.SourceLocation(),
+		}
+	}
+
+	rightType, err := oe.Right.Type(tb)
+	if err != nil {
+		return nil, err
+	}
+
+	if rightType != models.PrimitiveTypeBool {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("operator 'or' cannot be applied to type %s", rightType),
+			SourceLocation: oe.Right.SourceLocation(),
+		}
+	}
+
+	return models.PrimitiveTypeBool, nil
+}
+
 func (oe *OrExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	v1, err := oe.Left.Evaluate(bindings)
 	if err != nil {

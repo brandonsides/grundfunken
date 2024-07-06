@@ -27,27 +27,42 @@ const (
 	CMP_OP_GREATER
 )
 
-func (ce *CmpExpression) Type() (models.Type, *models.InterpreterError) {
-	firstType, err := ce.first.Type()
+func (ce *CmpOpType) String() string {
+	switch *ce {
+	case CMP_OP_TYPE_LESS:
+		return "<"
+	case CMP_OP_TYPE_LESS_EQUAL:
+		return "<="
+	case CMP_OP_GREATER_EQUAL:
+		return ">="
+	case CMP_OP_GREATER:
+		return ">"
+	default:
+		return "unknown"
+	}
+}
+
+func (ce *CmpExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+	firstType, err := ce.first.Type(tb)
 	if err != nil {
 		return nil, err
 	}
 
 	if firstType != models.PrimitiveTypeInt {
 		return nil, &models.InterpreterError{
-			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", ce.op.Type, firstType),
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", ce.op.Type.String(), firstType.String()),
 			SourceLocation: ce.first.SourceLocation(),
 		}
 	}
 
-	secondType, err := ce.second.Type()
+	secondType, err := ce.second.Type(tb)
 	if err != nil {
 		return nil, err
 	}
 
 	if secondType != models.PrimitiveTypeInt {
 		return nil, &models.InterpreterError{
-			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", ce.op.Type, secondType),
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", ce.op.Type.String(), secondType.String()),
 			SourceLocation: ce.second.SourceLocation(),
 		}
 	}

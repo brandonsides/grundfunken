@@ -12,8 +12,8 @@ type AndExpression struct {
 	Right models.Expression
 }
 
-func (ae *AndExpression) Type() (models.Type, *models.InterpreterError) {
-	leftType, err := ae.Left.Type()
+func (ae *AndExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+	leftType, err := ae.Left.Type(tb)
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +25,7 @@ func (ae *AndExpression) Type() (models.Type, *models.InterpreterError) {
 		}
 	}
 
-	rightType, err := ae.Right.Type()
+	rightType, err := ae.Right.Type(tb)
 	if err != nil {
 		return nil, err
 	}

@@ -10,7 +10,7 @@ type ArrayLiteralExpression struct {
 	loc models.SourceLocation
 }
 
-func (ale *ArrayLiteralExpression) Type() (models.Type, *models.InterpreterError) {
+func (ale *ArrayLiteralExpression) Type(_ models.TypeBindings) (models.Type, *models.InterpreterError) {
 	return models.PrimitiveTypeList, nil
 }
 

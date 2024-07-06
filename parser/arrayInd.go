@@ -13,7 +13,19 @@ type ArrayAccessExpression struct {
 	loc   models.SourceLocation
 }
 
-func (aae *ArrayAccessExpression) Type() (models.Type, *models.InterpreterError) {
+func (aae *ArrayAccessExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+	t, err := aae.Array.Type(tb)
+	if err != nil {
+		return nil, err
+	}
+
+	if t != models.PrimitiveTypeList {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("expected list; got %s", t),
+			SourceLocation: aae.Array.SourceLocation(),
+		}
+	}
+
 	return models.PrimitiveTypeAny, nil
 }
 
@@ -63,14 +75,14 @@ type ArraySliceExpression struct {
 	loc   models.SourceLocation
 }
 
-func (ase *ArraySliceExpression) Type() (models.Type, *models.InterpreterError) {
-	_, err := ase.Array.Type()
+func (ase *ArraySliceExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+	_, err := ase.Array.Type(tb)
 	if err != nil {
 		return nil, err
 	}
 
 	if ase.Begin != nil {
-		t, err := (*ase.Begin).Type()
+		t, err := (*ase.Begin).Type(tb)
 		if err != nil {
 			return nil, err
 		}

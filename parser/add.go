@@ -13,8 +13,8 @@ type AddExpression struct {
 	second models.Expression
 }
 
-func (ae *AddExpression) Type() (models.Type, *models.InterpreterError) {
-	firstType, err := ae.first.Type()
+func (ae *AddExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+	firstType, err := ae.first.Type(tb)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func (ae *AddExpression) Type() (models.Type, *models.InterpreterError) {
 		}
 	}
 
-	secondType, err := ae.second.Type()
+	secondType, err := ae.second.Type(tb)
 	if err != nil {
 		return nil, err
 	}

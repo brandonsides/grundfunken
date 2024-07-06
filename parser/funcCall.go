@@ -12,6 +12,29 @@ type FunctionCallExpression struct {
 	loc      models.SourceLocation
 }
 
+func (fce *FunctionCallExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+	funType, err := fce.Function.Type(tb)
+	if err != nil {
+		return nil, err
+	}
+
+	if funType != models.PrimitiveTypeFunction {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("cannot call non-function %s", funType.String()),
+			SourceLocation: fce.Function.SourceLocation(),
+		}
+	}
+
+	for _, arg := range fce.Args {
+		_, err := arg.Type(tb)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return models.PrimitiveTypeAny, nil
+}
+
 func (fce *FunctionCallExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	f, err := fce.Function.Evaluate(bindings)
 	if err != nil {
