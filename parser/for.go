@@ -14,6 +14,10 @@ type ForExpression struct {
 	loc        models.SourceLocation
 }
 
+func (fe *ForExpression) Type() (models.Type, *models.InterpreterError) {
+	return models.PrimitiveTypeList, nil
+}
+
 func (fe *ForExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	ret := make([]any, 0)
 

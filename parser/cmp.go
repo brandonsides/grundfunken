@@ -27,6 +27,34 @@ const (
 	CMP_OP_GREATER
 )
 
+func (ce *CmpExpression) Type() (models.Type, *models.InterpreterError) {
+	firstType, err := ce.first.Type()
+	if err != nil {
+		return nil, err
+	}
+
+	if firstType != models.PrimitiveTypeInt {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", ce.op.Type, firstType),
+			SourceLocation: ce.first.SourceLocation(),
+		}
+	}
+
+	secondType, err := ce.second.Type()
+	if err != nil {
+		return nil, err
+	}
+
+	if secondType != models.PrimitiveTypeInt {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", ce.op.Type, secondType),
+			SourceLocation: ce.second.SourceLocation(),
+		}
+	}
+
+	return models.PrimitiveTypeBool, nil
+}
+
 func (ce *CmpExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	v1, err := ce.first.Evaluate(bindings)
 	if err != nil {

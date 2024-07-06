@@ -10,6 +10,10 @@ type ArrayLiteralExpression struct {
 	loc models.SourceLocation
 }
 
+func (ale *ArrayLiteralExpression) Type() (models.Type, *models.InterpreterError) {
+	return models.PrimitiveTypeList, nil
+}
+
 func (ale *ArrayLiteralExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	ret := make([]any, 0)
 	for _, v := range ale.val {

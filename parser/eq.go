@@ -23,6 +23,10 @@ const (
 	EQ_OP_NOT_EQUAL
 )
 
+func (ee *EqExpression) Type() (models.Type, *models.InterpreterError) {
+	return models.PrimitiveTypeBool, nil
+}
+
 func (ee *EqExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	v1, err := ee.Left.Evaluate(bindings)
 	if err != nil {

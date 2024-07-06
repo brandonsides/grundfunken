@@ -12,6 +12,34 @@ type AndExpression struct {
 	Right models.Expression
 }
 
+func (ae *AndExpression) Type() (models.Type, *models.InterpreterError) {
+	leftType, err := ae.Left.Type()
+	if err != nil {
+		return nil, err
+	}
+
+	if leftType != models.PrimitiveTypeBool {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("operator 'and' cannot be applied to type %s", leftType),
+			SourceLocation: ae.Left.SourceLocation(),
+		}
+	}
+
+	rightType, err := ae.Right.Type()
+	if err != nil {
+		return nil, err
+	}
+
+	if rightType != models.PrimitiveTypeBool {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("operator 'and' cannot be applied to type %s", rightType),
+			SourceLocation: ae.Right.SourceLocation(),
+		}
+	}
+
+	return models.PrimitiveTypeBool, nil
+}
+
 func (ae *AndExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	v1, err := ae.Left.Evaluate(bindings)
 	if err != nil {

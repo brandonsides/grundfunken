@@ -1,5 +1,7 @@
 package models
 
+import "errors"
+
 type InterpreterError struct {
 	Message        string
 	Underlying     error
@@ -20,7 +22,7 @@ type Bindings map[string]any
 
 type Expression interface {
 	Evaluate(Bindings) (any, *InterpreterError)
-	Type() (any, *InterpreterError)
+	Type() (Type, *InterpreterError)
 	SourceLocation() SourceLocation
 }
 
@@ -28,32 +30,37 @@ type Function interface {
 	Call([]any) (any, error)
 }
 
-func TypeInt(v any) bool {
-	_, ok := v.(int)
-	return ok
+type Type interface {
+	Name() (string, error)
 }
 
-func TypeString(v any) bool {
-	_, ok := v.(string)
-	return ok
-}
+type PrimitiveType uint8
 
-func TypeBool(v any) bool {
-	_, ok := v.(bool)
-	return ok
-}
+const (
+	PrimitiveTypeInt PrimitiveType = iota
+	PrimitiveTypeString
+	PrimitiveTypeBool
+	PrimitiveTypeList
+	PrimitiveTypeObject
+	PrimitiveTypeFunction
+	PrimitiveTypeAny
+)
 
-func TypeObject(v any) bool {
-	_, ok := v.(map[string]any)
-	return ok
-}
-
-func TypeFunction(v any) bool {
-	_, ok := v.(Function)
-	return ok
-}
-
-func TypeArray(v any) bool {
-	_, ok := v.([]any)
-	return ok
+func (t PrimitiveType) Name() (string, error) {
+	switch t {
+	case PrimitiveTypeInt:
+		return "int", nil
+	case PrimitiveTypeString:
+		return "string", nil
+	case PrimitiveTypeBool:
+		return "bool", nil
+	case PrimitiveTypeList:
+		return "list", nil
+	case PrimitiveTypeObject:
+		return "object", nil
+	case PrimitiveTypeFunction:
+		return "function", nil
+	default:
+		return "", errors.New("unknown primitive type")
+	}
 }

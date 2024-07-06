@@ -13,6 +13,10 @@ type ArrayAccessExpression struct {
 	loc   models.SourceLocation
 }
 
+func (aae *ArrayAccessExpression) Type() (models.Type, *models.InterpreterError) {
+	return models.PrimitiveTypeAny, nil
+}
+
 func (aae *ArrayAccessExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	arr, err := aae.Array.Evaluate(bindings)
 	if err != nil {
@@ -57,6 +61,28 @@ type ArraySliceExpression struct {
 	Begin *models.Expression
 	End   *models.Expression
 	loc   models.SourceLocation
+}
+
+func (ase *ArraySliceExpression) Type() (models.Type, *models.InterpreterError) {
+	_, err := ase.Array.Type()
+	if err != nil {
+		return nil, err
+	}
+
+	if ase.Begin != nil {
+		t, err := (*ase.Begin).Type()
+		if err != nil {
+			return nil, err
+		}
+		if t != models.PrimitiveTypeInt {
+			return nil, &models.InterpreterError{
+				Message:        fmt.Sprintf("expected int; got %s", t),
+				SourceLocation: (*ase.Begin).SourceLocation(),
+			}
+		}
+	}
+
+	return models.PrimitiveTypeList, nil
 }
 
 func (ase *ArraySliceExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {

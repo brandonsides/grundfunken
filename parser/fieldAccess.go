@@ -12,6 +12,15 @@ type FieldAccessExpression struct {
 	fieldLoc models.SourceLocation
 }
 
+func (fae *FieldAccessExpression) Type() (models.Type, *models.InterpreterError) {
+	_, err := fae.Object.Type()
+	if err != nil {
+		return nil, err
+	}
+
+	return models.PrimitiveTypeAny, nil
+}
+
 func (fae *FieldAccessExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	obj, err := fae.Object.Evaluate(bindings)
 	if err != nil {

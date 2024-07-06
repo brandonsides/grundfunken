@@ -13,6 +13,34 @@ type AddExpression struct {
 	second models.Expression
 }
 
+func (ae *AddExpression) Type() (models.Type, *models.InterpreterError) {
+	firstType, err := ae.first.Type()
+	if err != nil {
+		return nil, err
+	}
+
+	if firstType != models.PrimitiveTypeInt {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", ae.op.Value, firstType),
+			SourceLocation: ae.op.SourceLocation,
+		}
+	}
+
+	secondType, err := ae.second.Type()
+	if err != nil {
+		return nil, err
+	}
+
+	if secondType != models.PrimitiveTypeInt {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", ae.op.Value, secondType),
+			SourceLocation: ae.op.SourceLocation,
+		}
+	}
+
+	return models.PrimitiveTypeInt, nil
+}
+
 func (ae *AddExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
 	v1, err := ae.first.Evaluate(bindings)
 	if err != nil {
@@ -49,10 +77,6 @@ func (ae *AddExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 			SourceLocation: ae.op.SourceLocation,
 		}
 	}
-}
-
-func (ae *AddExpression) Type() models.Type {
-	return models.IntType
 }
 
 func (ae *AddExpression) SourceLocation() models.SourceLocation {
