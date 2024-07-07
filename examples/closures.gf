@@ -1,10 +1,10 @@
 let a = 3,
     b = 4,
-    funcIf = func (cond, res1, res2)
+    funcIf = func (cond bool, res1, res2)
         if cond then
-            res1 + a
+            res1
         else
-            res2 + b,
+            res2,
     a = 5,
     b = 6
 in [

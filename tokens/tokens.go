@@ -31,6 +31,9 @@ const (
 	PERCENT
 	DOT
 
+	// Type Operators
+	PIPE
+
 	// Values
 	IDENTIFIER
 	STRING
@@ -48,38 +51,45 @@ const (
 	OR
 	NOT
 	IS
+	MATCH
+	CASE
+	AS
 )
 
 var tokMap = map[string]TokenType{
-	"(":    LEFT_PAREN,
-	")":    RIGHT_PAREN,
-	",":    COMMA,
-	"\n":   NEWLINE,
-	".":    DOT,
-	"-":    MINUS,
-	"+":    PLUS,
-	"/":    SLASH,
-	"*":    STAR,
-	"=":    EQUAL,
-	"<":    LEFT_ANGLE_BRACKET,
-	">":    RIGHT_ANGLE_BRACKET,
-	"[":    LEFT_SQUARE_BRACKET,
-	"]":    RIGHT_SQUARE_BRACKET,
-	"{":    LEFT_SQUIGGLY_BRACKET,
-	"}":    RIGHT_SQUIGGLY_BRACKET,
-	"%":    PERCENT,
-	":":    COLON,
-	"let":  LET,
-	"in":   IN,
-	"if":   IF,
-	"for":  FOR,
-	"then": THEN,
-	"else": ELSE,
-	"func": FUNC,
-	"and":  AND,
-	"or":   OR,
-	"not":  NOT,
-	"is":   IS,
+	"(":     LEFT_PAREN,
+	")":     RIGHT_PAREN,
+	",":     COMMA,
+	"\n":    NEWLINE,
+	".":     DOT,
+	"-":     MINUS,
+	"+":     PLUS,
+	"/":     SLASH,
+	"*":     STAR,
+	"=":     EQUAL,
+	"<":     LEFT_ANGLE_BRACKET,
+	">":     RIGHT_ANGLE_BRACKET,
+	"|":     PIPE,
+	"[":     LEFT_SQUARE_BRACKET,
+	"]":     RIGHT_SQUARE_BRACKET,
+	"{":     LEFT_SQUIGGLY_BRACKET,
+	"}":     RIGHT_SQUIGGLY_BRACKET,
+	"%":     PERCENT,
+	":":     COLON,
+	"let":   LET,
+	"in":    IN,
+	"if":    IF,
+	"for":   FOR,
+	"then":  THEN,
+	"else":  ELSE,
+	"func":  FUNC,
+	"and":   AND,
+	"or":    OR,
+	"not":   NOT,
+	"is":    IS,
+	"match": MATCH,
+	"as":    AS,
+	"case":  CASE,
 }
 
 type Token struct {

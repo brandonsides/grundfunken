@@ -6,15 +6,24 @@ import (
 	"os"
 	"time"
 
-	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 )
 
 type BuiltinFunction struct {
-	Argc int
+	args []types.Arg
+	ret  types.Type
 	Fn   func([]any) (any, error)
 }
 
-var _ models.Function = &BuiltinFunction{}
+func Builtin(args []types.Arg, ret types.Type, fn func([]any) (any, error)) types.Function {
+	return &BuiltinFunction{
+		args: args,
+		ret:  ret,
+		Fn:   fn,
+	}
+}
+
+var _ types.Function = &BuiltinFunction{}
 
 func (f BuiltinFunction) Call(args []any) (ret any, err error) {
 	defer func() {
@@ -23,22 +32,44 @@ func (f BuiltinFunction) Call(args []any) (ret any, err error) {
 		}
 	}()
 
-	if len(args) > f.Argc {
-		return nil, fmt.Errorf("expected %d arguments, got %d", f.Argc, len(args))
+	if len(args) > len(f.args) {
+		return nil, fmt.Errorf("expected %d arguments, got %d", len(f.args), len(args))
 	}
 	return f.Fn(args)
 }
 
+func (f BuiltinFunction) Args() []types.Arg {
+	return f.args
+}
+
+func (f BuiltinFunction) Return() types.Type {
+	return f.ret
+}
+
 var builtins = map[string]any{
 	"len": &BuiltinFunction{
-		Argc: 1,
+		args: []types.Arg{{
+			Name: "list",
+			Type: types.List(types.PrimitiveTypeAny),
+		}},
+		ret: types.PrimitiveTypeInt,
 		Fn: func(args []any) (any, error) {
 			list := args[0].([]any)
 			return len(list), nil
 		},
 	},
 	"range": &BuiltinFunction{
-		Argc: 2,
+		args: []types.Arg{
+			{
+				Name: "start",
+				Type: types.PrimitiveTypeInt,
+			},
+			{
+				Name: "end",
+				Type: types.PrimitiveTypeInt,
+			},
+		},
+		ret: types.List(types.PrimitiveTypeInt),
 		Fn: func(args []any) (any, error) {
 			start := args[0].(int)
 			end := args[1].(int)
@@ -53,20 +84,38 @@ var builtins = map[string]any{
 		},
 	},
 	"toString": &BuiltinFunction{
-		Argc: 1,
+		args: []types.Arg{{
+			Name: "val",
+			Type: types.PrimitiveTypeAny,
+		}},
+		ret: types.PrimitiveTypeString,
 		Fn: func(args []any) (any, error) {
 			return fmt.Sprint(args[0]), nil
 		},
 	},
 	"prepend": &BuiltinFunction{
-		Argc: 2,
+		args: []types.Arg{{
+			Name: "item",
+			Type: types.PrimitiveTypeAny,
+		}, {
+			Name: "list",
+			Type: types.List(types.PrimitiveTypeAny),
+		}},
+		ret: types.List(types.PrimitiveTypeAny),
 		Fn: func(args []any) (any, error) {
 			list := args[1].([]any)
 			return append([]any{args[0]}, list...), nil
 		},
 	},
 	"append": &BuiltinFunction{
-		Argc: 2,
+		args: []types.Arg{{
+			Name: "list",
+			Type: types.List(types.PrimitiveTypeAny),
+		}, {
+			Name: "item",
+			Type: types.PrimitiveTypeAny,
+		}},
+		ret: types.List(types.PrimitiveTypeAny),
 		Fn: func(args []any) (any, error) {
 			list := args[0].([]any)
 
@@ -77,7 +126,14 @@ var builtins = map[string]any{
 		},
 	},
 	"concat": &BuiltinFunction{
-		Argc: 2,
+		args: []types.Arg{{
+			Name: "list1",
+			Type: types.List(types.PrimitiveTypeAny),
+		}, {
+			Name: "list2",
+			Type: types.List(types.PrimitiveTypeAny),
+		}},
+		ret: types.List(types.PrimitiveTypeAny),
 		Fn: func(args []any) (any, error) {
 			list1 := args[0].([]any)
 			newList := make([]any, len(list1))
@@ -88,7 +144,14 @@ var builtins = map[string]any{
 		},
 	},
 	"concatStr": &BuiltinFunction{
-		Argc: 2,
+		args: []types.Arg{{
+			Name: "str1",
+			Type: types.PrimitiveTypeString,
+		}, {
+			Name: "str2",
+			Type: types.PrimitiveTypeString,
+		}},
+		ret: types.PrimitiveTypeString,
 		Fn: func(args []any) (any, error) {
 			str1 := args[0].(string)
 			str2 := args[1].(string)
@@ -96,7 +159,14 @@ var builtins = map[string]any{
 		},
 	},
 	"atStr": &BuiltinFunction{
-		Argc: 2,
+		args: []types.Arg{{
+			Name: "str",
+			Type: types.PrimitiveTypeString,
+		}, {
+			Name: "index",
+			Type: types.PrimitiveTypeInt,
+		}},
+		ret: types.PrimitiveTypeString,
 		Fn: func(args []any) (any, error) {
 			str := args[0].(string)
 			index := args[1].(int)
@@ -107,14 +177,28 @@ var builtins = map[string]any{
 		},
 	},
 	"lenStr": &BuiltinFunction{
-		Argc: 1,
+		args: []types.Arg{{
+			Name: "str",
+			Type: types.PrimitiveTypeString,
+		}},
+		ret: types.PrimitiveTypeInt,
 		Fn: func(args []any) (any, error) {
 			str := args[0].(string)
 			return len(str), nil
 		},
 	},
 	"sliceStr": &BuiltinFunction{
-		Argc: 3,
+		args: []types.Arg{{
+			Name: "str",
+			Type: types.PrimitiveTypeString,
+		}, {
+			Name: "start",
+			Type: types.PrimitiveTypeInt,
+		}, {
+			Name: "end",
+			Type: types.PrimitiveTypeInt,
+		}},
+		ret: types.PrimitiveTypeString,
 		Fn: func(args []any) (any, error) {
 			str := args[0].(string)
 			start := args[1].(int)
@@ -136,7 +220,11 @@ var builtins = map[string]any{
 		},
 	},
 	"input": &BuiltinFunction{
-		Argc: 1,
+		args: []types.Arg{{
+			Name: "prompt",
+			Type: types.PrimitiveTypeString,
+		}},
+		ret: types.PrimitiveTypeString,
 		Fn: func(args []any) (any, error) {
 			fmt.Print(args[0])
 			reader := bufio.NewReader(os.Stdin)
@@ -144,14 +232,22 @@ var builtins = map[string]any{
 		},
 	},
 	"print": &BuiltinFunction{
-		Argc: 1,
+		args: []types.Arg{{
+			Name: "val",
+			Type: types.PrimitiveTypeAny,
+		}},
+		ret: types.PrimitiveTypeUnit,
 		Fn: func(args []any) (any, error) {
 			fmt.Println(args[0])
 			return nil, nil
 		},
 	},
 	"sleep": &BuiltinFunction{
-		Argc: 1,
+		args: []types.Arg{{
+			Name: "time",
+			Type: types.PrimitiveTypeInt,
+		}},
+		ret: types.PrimitiveTypeUnit,
 		Fn: func(a []any) (any, error) {
 			t := a[0].(int)
 			time.Sleep(time.Duration(t) * time.Millisecond)
@@ -159,7 +255,11 @@ var builtins = map[string]any{
 		},
 	},
 	"parseInt": &BuiltinFunction{
-		Argc: 1,
+		args: []types.Arg{{
+			Name: "str",
+			Type: types.PrimitiveTypeString,
+		}},
+		ret: types.PrimitiveTypeInt,
 		Fn: func(args []any) (any, error) {
 			str := args[0].(string)
 			var num int

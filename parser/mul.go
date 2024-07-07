@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
@@ -13,13 +14,13 @@ type MulExpression struct {
 	second models.Expression
 }
 
-func (me *MulExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+func (me *MulExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
 	firstType, err := me.first.Type(tb)
 	if err != nil {
 		return nil, err
 	}
 
-	if firstType != models.PrimitiveTypeInt {
+	if firstType != types.PrimitiveTypeInt {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", me.op.Value, firstType),
 			SourceLocation: me.first.SourceLocation(),
@@ -31,14 +32,14 @@ func (me *MulExpression) Type(tb models.TypeBindings) (models.Type, *models.Inte
 		return nil, err
 	}
 
-	if secondType != models.PrimitiveTypeInt {
+	if secondType != types.PrimitiveTypeInt {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", me.op.Value, secondType),
 			SourceLocation: me.second.SourceLocation(),
 		}
 	}
 
-	return models.PrimitiveTypeInt, nil
+	return types.PrimitiveTypeInt, nil
 }
 
 func (me *MulExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
@@ -99,6 +100,13 @@ func foldMul(first models.Expression, toks *tokens.TokenStack) (exp models.Expre
 	if !ok || tok.Type != tokens.STAR && tok.Type != tokens.SLASH && tok.Type != tokens.PERCENT {
 		return first, nil
 	}
+	if first == nil {
+		return nil, &models.InterpreterError{
+			Message:        "expected expression",
+			SourceLocation: tok.SourceLocation,
+		}
+	}
+
 	toks.Pop()
 
 	right, err := parseMulExpression(toks)

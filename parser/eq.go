@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
@@ -23,8 +24,8 @@ const (
 	EQ_OP_NOT_EQUAL
 )
 
-func (ee *EqExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
-	return models.PrimitiveTypeBool, nil
+func (ee *EqExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
+	return types.PrimitiveTypeBool, nil
 }
 
 func (ee *EqExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {

@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 )
 
 type IdentifierExpression struct {
@@ -9,7 +10,7 @@ type IdentifierExpression struct {
 	loc  models.SourceLocation
 }
 
-func (ie *IdentifierExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+func (ie *IdentifierExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
 	if _, ok := tb[ie.name]; !ok {
 		return nil, &models.InterpreterError{
 			Message:        "cannot type unbound identifier",

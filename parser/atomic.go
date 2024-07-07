@@ -134,6 +134,11 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 		exp, err = parseLetExpression(toks)
 	case tokens.IF:
 		exp, err = parseIfExpression(toks)
+	case tokens.MATCH:
+		exp, err = parseMatchExpression(toks)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, nil
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
@@ -12,13 +13,13 @@ type AndExpression struct {
 	Right models.Expression
 }
 
-func (ae *AndExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+func (ae *AndExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
 	leftType, err := ae.Left.Type(tb)
 	if err != nil {
 		return nil, err
 	}
 
-	if leftType != models.PrimitiveTypeBool {
+	if leftType != types.PrimitiveTypeBool {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("operator 'and' cannot be applied to type %s", leftType),
 			SourceLocation: ae.Left.SourceLocation(),
@@ -30,14 +31,14 @@ func (ae *AndExpression) Type(tb models.TypeBindings) (models.Type, *models.Inte
 		return nil, err
 	}
 
-	if rightType != models.PrimitiveTypeBool {
+	if rightType != types.PrimitiveTypeBool {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("operator 'and' cannot be applied to type %s", rightType),
 			SourceLocation: ae.Right.SourceLocation(),
 		}
 	}
 
-	return models.PrimitiveTypeBool, nil
+	return types.PrimitiveTypeBool, nil
 }
 
 func (ae *AndExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {

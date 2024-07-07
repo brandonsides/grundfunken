@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
@@ -42,13 +43,13 @@ func (ce *CmpOpType) String() string {
 	}
 }
 
-func (ce *CmpExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+func (ce *CmpExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
 	firstType, err := ce.first.Type(tb)
 	if err != nil {
 		return nil, err
 	}
 
-	if firstType != models.PrimitiveTypeInt {
+	if firstType != types.PrimitiveTypeInt {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", ce.op.Type.String(), firstType.String()),
 			SourceLocation: ce.first.SourceLocation(),
@@ -60,14 +61,14 @@ func (ce *CmpExpression) Type(tb models.TypeBindings) (models.Type, *models.Inte
 		return nil, err
 	}
 
-	if secondType != models.PrimitiveTypeInt {
+	if secondType != types.PrimitiveTypeInt {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", ce.op.Type.String(), secondType.String()),
 			SourceLocation: ce.second.SourceLocation(),
 		}
 	}
 
-	return models.PrimitiveTypeBool, nil
+	return types.PrimitiveTypeBool, nil
 }
 
 func (ce *CmpExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {

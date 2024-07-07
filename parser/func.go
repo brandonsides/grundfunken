@@ -4,13 +4,15 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
 type FunctionExpression struct {
-	args []string
-	body models.Expression
-	loc  models.SourceLocation
+	Args    []types.Arg
+	RetType types.Type
+	body    models.Expression
+	loc     models.SourceLocation
 }
 
 type FuncValue struct {
@@ -19,9 +21,9 @@ type FuncValue struct {
 }
 
 func (f FuncValue) Call(args []any) (any, error) {
-	if len(args) != len(f.Exp.args) {
+	if len(args) != len(f.Exp.Args) {
 		return nil, &models.InterpreterError{
-			Message:        fmt.Sprintf("expected %d arguments, got %d", len(f.Exp.args), len(args)),
+			Message:        fmt.Sprintf("expected %d arguments, got %d", len(f.Exp.Args), len(args)),
 			SourceLocation: f.Exp.loc,
 		}
 	}
@@ -29,8 +31,8 @@ func (f FuncValue) Call(args []any) (any, error) {
 	for k, v := range f.Bindings {
 		newBindings[k] = v
 	}
-	for i, arg := range f.Exp.args {
-		newBindings[arg] = args[i]
+	for i, arg := range f.Exp.Args {
+		newBindings[arg.Name] = args[i]
 	}
 	ret, err := f.Exp.body.Evaluate(newBindings)
 	if err != nil {
@@ -40,11 +42,43 @@ func (f FuncValue) Call(args []any) (any, error) {
 }
 
 func (f *FuncValue) String() string {
-	return fmt.Sprintf("func(%v) { ... }", f.Exp.args)
+	return fmt.Sprintf("func(%v) { ... }", f.Exp.Args)
 }
 
-func (fe *FunctionExpression) Type(_ models.TypeBindings) (models.Type, *models.InterpreterError) {
-	return models.PrimitiveTypeFunction, nil
+func (fe *FunctionExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
+	innerTB := make(types.TypeBindings)
+	for k, v := range tb {
+		innerTB[k] = v
+	}
+
+	argTypes := make([]types.Type, 0)
+	for _, arg := range fe.Args {
+		argTypes = append(argTypes, arg.Type)
+		innerTB[arg.Name] = arg.Type
+	}
+
+	retType, err := fe.body.Type(innerTB)
+	if err != nil {
+		return nil, err
+	}
+
+	retSuper, innerErr := types.IsSuperTo(fe.RetType, retType)
+	if innerErr != nil {
+		return nil, &models.InterpreterError{
+			Message:        "inconsistent return type",
+			SourceLocation: fe.loc,
+			Underlying:     innerErr,
+		}
+	}
+
+	if !retSuper {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("expected return type %s, got %s", fe.RetType, retType),
+			SourceLocation: fe.loc,
+		}
+	}
+
+	return types.Func(argTypes, retType), nil
 }
 
 func (fe *FunctionExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
@@ -99,7 +133,7 @@ func parseFunction(toks *tokens.TokenStack) (exp models.Expression, err *models.
 	}
 	toks.Pop()
 
-	args := make([]string, 0)
+	args := make([]types.Arg, 0)
 	var popErr error
 	for tok, popErr = toks.Pop(); popErr == nil; tok, popErr = toks.Pop() {
 		if tok.Type == tokens.RIGHT_PAREN {
@@ -112,19 +146,43 @@ func parseFunction(toks *tokens.TokenStack) (exp models.Expression, err *models.
 				SourceLocation: tok.SourceLocation,
 			}
 		}
-		args = append(args, tok.Value)
 		argLoc := tok.SourceLocation
+		argName := tok.Value
 
-		tok, popErr := toks.Pop()
-		if popErr != nil {
+		tok, ok := toks.Peek()
+		if !ok {
 			return nil, &models.InterpreterError{
 				Message:        "after argument declaration",
 				SourceLocation: argLoc,
 				Underlying: &models.InterpreterError{
-					Message:        "expected comma",
+					Message:        "expected comma or closing parenthesis",
 					Underlying:     popErr,
 					SourceLocation: tok.SourceLocation,
 				},
+			}
+		}
+
+		var argType types.Type = types.PrimitiveTypeAny
+		if tok.Type != tokens.COMMA && tok.Type != tokens.RIGHT_PAREN {
+			var innerErr error
+			argType, innerErr = parseType(toks)
+			if innerErr != nil {
+				return nil, &models.InterpreterError{
+					Message:        "after argument declaration",
+					SourceLocation: argLoc,
+					Underlying:     innerErr,
+				}
+			}
+		}
+
+		args = append(args, types.Arg{argName, argType})
+
+		tok, innerErr := toks.Pop()
+		if innerErr != nil {
+			return nil, &models.InterpreterError{
+				Message:        "expected comma or closing parenthesis",
+				SourceLocation: toks.CurrentSourceLocation(),
+				Underlying:     innerErr,
 			}
 		}
 
@@ -140,14 +198,40 @@ func parseFunction(toks *tokens.TokenStack) (exp models.Expression, err *models.
 		}
 	}
 
+	tok, ok = toks.Peek()
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        "expected return type",
+			SourceLocation: toks.CurrentSourceLocation(),
+		}
+	}
+
+	retType, innerErr := parseType(toks)
+	if err != nil {
+		return nil, &models.InterpreterError{
+			Message:        "expected return type",
+			SourceLocation: toks.CurrentSourceLocation(),
+			Underlying:     innerErr,
+		}
+	}
+
+	tok, ok = toks.Peek()
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        "expected function body",
+			SourceLocation: toks.CurrentSourceLocation(),
+		}
+	}
+
 	exp, err = ParseExpression(toks)
 	if err != nil {
 		return nil, err
 	}
 
 	return &FunctionExpression{
-		args: args,
-		body: exp,
-		loc:  beginLoc,
+		Args:    args,
+		RetType: retType,
+		body:    exp,
+		loc:     beginLoc,
 	}, nil
 }

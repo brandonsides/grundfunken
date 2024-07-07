@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
@@ -14,13 +15,13 @@ type IfExpression struct {
 	loc       models.SourceLocation
 }
 
-func (ie *IfExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+func (ie *IfExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
 	condType, err := ie.Condition.Type(tb)
 	if err != nil {
 		return nil, err
 	}
 
-	if condType != models.PrimitiveTypeBool {
+	if condType != types.PrimitiveTypeBool {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("if condition must evaluate to a boolean; got %s", condType),
 			SourceLocation: ie.Condition.SourceLocation(),
@@ -37,11 +38,7 @@ func (ie *IfExpression) Type(tb models.TypeBindings) (models.Type, *models.Inter
 		return nil, err
 	}
 
-	if thenType != elseType {
-		return models.PrimitiveTypeAny, nil
-	}
-
-	return thenType, nil
+	return types.Sum(thenType, elseType), nil
 }
 
 func (ie *IfExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {

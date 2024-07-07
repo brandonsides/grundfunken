@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
@@ -13,20 +14,21 @@ type ArrayAccessExpression struct {
 	loc   models.SourceLocation
 }
 
-func (aae *ArrayAccessExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+func (aae *ArrayAccessExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
 	t, err := aae.Array.Type(tb)
 	if err != nil {
 		return nil, err
 	}
 
-	if t != models.PrimitiveTypeList {
+	tList, ok := t.(types.ListType)
+	if !ok {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("expected list; got %s", t),
 			SourceLocation: aae.Array.SourceLocation(),
 		}
 	}
 
-	return models.PrimitiveTypeAny, nil
+	return tList.ElementType, nil
 }
 
 func (aae *ArrayAccessExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
@@ -75,8 +77,8 @@ type ArraySliceExpression struct {
 	loc   models.SourceLocation
 }
 
-func (ase *ArraySliceExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
-	_, err := ase.Array.Type(tb)
+func (ase *ArraySliceExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
+	t, err := ase.Array.Type(tb)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +88,7 @@ func (ase *ArraySliceExpression) Type(tb models.TypeBindings) (models.Type, *mod
 		if err != nil {
 			return nil, err
 		}
-		if t != models.PrimitiveTypeInt {
+		if t != types.PrimitiveTypeInt {
 			return nil, &models.InterpreterError{
 				Message:        fmt.Sprintf("expected int; got %s", t),
 				SourceLocation: (*ase.Begin).SourceLocation(),
@@ -94,7 +96,20 @@ func (ase *ArraySliceExpression) Type(tb models.TypeBindings) (models.Type, *mod
 		}
 	}
 
-	return models.PrimitiveTypeList, nil
+	if ase.End != nil {
+		t, err := (*ase.End).Type(tb)
+		if err != nil {
+			return nil, err
+		}
+		if t != types.PrimitiveTypeInt {
+			return nil, &models.InterpreterError{
+				Message:        fmt.Sprintf("expected int; got %s", t),
+				SourceLocation: (*ase.End).SourceLocation(),
+			}
+		}
+	}
+
+	return t, nil
 }
 
 func (ase *ArraySliceExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {

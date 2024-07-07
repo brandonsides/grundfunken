@@ -2,16 +2,44 @@ package parser
 
 import (
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
 type ArrayLiteralExpression struct {
-	val []models.Expression
-	loc models.SourceLocation
+	elemType types.Type
+	val      []models.Expression
+	loc      models.SourceLocation
 }
 
-func (ale *ArrayLiteralExpression) Type(_ models.TypeBindings) (models.Type, *models.InterpreterError) {
-	return models.PrimitiveTypeList, nil
+func (ale *ArrayLiteralExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
+	if ale.elemType == nil {
+		ale.elemType = types.PrimitiveTypeAny
+	}
+
+	for _, v := range ale.val {
+		t, err := v.Type(tb)
+		if err != nil {
+			return nil, err
+		}
+
+		aleSuper, innerErr := types.IsSuperTo(ale.elemType, t)
+		if innerErr != nil {
+			return nil, &models.InterpreterError{
+				Message:        "inconsistent array element types",
+				SourceLocation: v.SourceLocation(),
+				Underlying:     innerErr,
+			}
+		}
+		if !aleSuper {
+			return nil, &models.InterpreterError{
+				Message:        "inconsistent array element types",
+				SourceLocation: v.SourceLocation(),
+			}
+		}
+	}
+
+	return types.List(ale.elemType), nil
 }
 
 func (ale *ArrayLiteralExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
@@ -80,9 +108,19 @@ func parseArrayLiteral(toks *tokens.TokenStack) (exp models.Expression, err *mod
 		}
 	}
 
+	typ, innerErr := parseType(toks)
+	if innerErr != nil {
+		return nil, &models.InterpreterError{
+			Message:        "failed to parse array type",
+			SourceLocation: beginSourceLocation,
+			Underlying:     innerErr,
+		}
+	}
+
 	exp = &ArrayLiteralExpression{
-		val: exps,
-		loc: beginSourceLocation,
+		val:      exps,
+		loc:      beginSourceLocation,
+		elemType: typ,
 	}
 
 	return exp, nil

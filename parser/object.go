@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
@@ -10,14 +11,16 @@ type ObjectLiteralExpression struct {
 	loc    models.SourceLocation
 }
 
-func (ole *ObjectLiteralExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
-	for _, value := range ole.Fields {
-		_, err := value.Type(tb)
+func (ole *ObjectLiteralExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
+	fieldTypes := make(map[string]types.Type)
+	for key, value := range ole.Fields {
+		t, err := value.Type(tb)
 		if err != nil {
 			return nil, err
 		}
+		fieldTypes[key] = t
 	}
-	return models.PrimitiveTypeObject, nil
+	return types.Object(fieldTypes), nil
 }
 
 func (ole *ObjectLiteralExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {

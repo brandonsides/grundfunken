@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
@@ -12,13 +13,13 @@ type OrExpression struct {
 	Right models.Expression
 }
 
-func (oe *OrExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+func (oe *OrExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
 	leftType, err := oe.Left.Type(tb)
 	if err != nil {
 		return nil, err
 	}
 
-	if leftType != models.PrimitiveTypeBool {
+	if leftType != types.PrimitiveTypeBool {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("operator 'or' cannot be applied to type %s", leftType),
 			SourceLocation: oe.Left.SourceLocation(),
@@ -30,14 +31,14 @@ func (oe *OrExpression) Type(tb models.TypeBindings) (models.Type, *models.Inter
 		return nil, err
 	}
 
-	if rightType != models.PrimitiveTypeBool {
+	if rightType != types.PrimitiveTypeBool {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("operator 'or' cannot be applied to type %s", rightType),
 			SourceLocation: oe.Right.SourceLocation(),
 		}
 	}
 
-	return models.PrimitiveTypeBool, nil
+	return types.PrimitiveTypeBool, nil
 }
 
 func (oe *OrExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
@@ -89,6 +90,12 @@ func foldOr(first models.Expression, toks *tokens.TokenStack) (exp models.Expres
 	tok, ok := toks.Peek()
 	if !ok || tok.Type != tokens.OR {
 		return first, nil
+	}
+	if first == nil {
+		return nil, &models.InterpreterError{
+			Message:        "expected expression",
+			SourceLocation: tok.SourceLocation,
+		}
 	}
 	toks.Pop()
 

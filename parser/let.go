@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
@@ -16,13 +17,21 @@ type LetExpression struct {
 	InClause   models.Expression
 }
 
-func (le *LetExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
-	newTB := make(models.TypeBindings)
+func (le *LetExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
+	newTB := make(types.TypeBindings)
 	for k, v := range tb {
 		newTB[k] = v
 	}
 
 	for _, bindingExp := range le.LetClauses {
+		if funcExp, ok := bindingExp.Expression.(*FunctionExpression); ok {
+			typs := make([]types.Type, 0, len(funcExp.Args))
+			for _, arg := range funcExp.Args {
+				typs = append(typs, arg.Type)
+			}
+			newTB[bindingExp.Identifier] = types.Func(typs, funcExp.RetType)
+		}
+
 		t, err := bindingExp.Expression.Type(newTB)
 		if err != nil {
 			return nil, err

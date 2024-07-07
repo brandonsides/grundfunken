@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
@@ -13,13 +14,13 @@ type AddExpression struct {
 	second models.Expression
 }
 
-func (ae *AddExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+func (ae *AddExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
 	firstType, err := ae.first.Type(tb)
 	if err != nil {
 		return nil, err
 	}
 
-	if firstType != models.PrimitiveTypeInt {
+	if firstType != types.PrimitiveTypeInt {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", ae.op.Value, firstType),
 			SourceLocation: ae.op.SourceLocation,
@@ -31,14 +32,14 @@ func (ae *AddExpression) Type(tb models.TypeBindings) (models.Type, *models.Inte
 		return nil, err
 	}
 
-	if secondType != models.PrimitiveTypeInt {
+	if secondType != types.PrimitiveTypeInt {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", ae.op.Value, secondType),
 			SourceLocation: ae.op.SourceLocation,
 		}
 	}
 
-	return models.PrimitiveTypeInt, nil
+	return types.PrimitiveTypeInt, nil
 }
 
 func (ae *AddExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {

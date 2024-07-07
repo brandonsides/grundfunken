@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/parser"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -91,9 +92,13 @@ func interpret(inputFilePath string) (any, map[string][]string, error) {
 	// evaluate the expression to get the final result
 	// with the top-level bindings for certain builtin
 	// identifiers
-	builtins["import"] = &BuiltinFunction{
-		Argc: 1,
-		Fn: func(args []any) (any, error) {
+	builtins["import"] = Builtin(
+		[]types.Arg{{
+			Name: "path",
+			Type: types.PrimitiveTypeString,
+		}},
+		types.PrimitiveTypeAny,
+		func(args []any) (any, error) {
 			path := args[0].(string)
 
 			ret, newLines, err := interpret(path)
@@ -102,11 +107,16 @@ func interpret(inputFilePath string) (any, map[string][]string, error) {
 			}
 			return ret, err
 		},
-	}
+	)
 
-	var builtinTypes = map[string]models.Type{}
-	for k := range builtins {
-		builtinTypes[k] = models.PrimitiveTypeFunction
+	var builtinTypes = map[string]types.Type{}
+	for name, f := range builtins {
+		f := f.(*BuiltinFunction)
+		argTypes := make([]types.Type, 0, len(f.Args()))
+		for _, arg := range f.Args() {
+			argTypes = append(argTypes, arg.Type)
+		}
+		builtinTypes[name] = types.Func(argTypes, f.Return())
 	}
 
 	_, err = expression.Type(builtinTypes)

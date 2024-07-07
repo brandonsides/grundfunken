@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 )
 
 type FieldAccessExpression struct {
@@ -12,20 +13,29 @@ type FieldAccessExpression struct {
 	fieldLoc models.SourceLocation
 }
 
-func (fae *FieldAccessExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+func (fae *FieldAccessExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
 	t, err := fae.Object.Type(tb)
 	if err != nil {
 		return nil, err
 	}
 
-	if t != models.PrimitiveTypeObject {
+	tObj, ok := t.(types.ObjectType)
+	if !ok {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("cannot access field on type %s", t.String()),
 			SourceLocation: fae.Object.SourceLocation(),
 		}
 	}
 
-	return models.PrimitiveTypeAny, nil
+	fieldType, ok := tObj.Fields[fae.Field]
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("field %s not found on type %s", fae.Field, t.String()),
+			SourceLocation: fae.fieldLoc,
+		}
+	}
+
+	return fieldType, nil
 }
 
 func (fae *FieldAccessExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {

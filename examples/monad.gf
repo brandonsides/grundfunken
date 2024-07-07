@@ -1,8 +1,19 @@
 let
     utils = import("utils.gf"),
 
-    bind = func(monad) func(f)
-        monad.fmap(f).flatten(),
+    bind = func(monad) func(func(any) {
+        flatten: func() any,
+        fmap: func(func(any) any) any,
+        str: string,
+        andThen: func(func(any) any) any
+    }) {
+        flatten: func() monad.flatten().andThen(func),
+        fmap: func(f) monad.fmap(func(f).andThen),
+        str: utils.concatAll([monad.str, ".andThen(", func.toString, ")"]),
+        andThen: bind(monad)
+    }
+        func(f)
+            monad.fmap(f).flatten(),
 
     None = {
         isSome: false,

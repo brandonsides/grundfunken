@@ -1,22 +1,25 @@
 package parser
 
-import "github.com/brandonksides/grundfunken/models"
+import (
+	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
+)
 
 type LiteralExpression struct {
 	val any
 	loc models.SourceLocation
 }
 
-func (le *LiteralExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+func (le *LiteralExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
 	switch le.val.(type) {
 	case bool:
-		return models.PrimitiveTypeBool, nil
+		return types.PrimitiveTypeBool, nil
 	case int:
-		return models.PrimitiveTypeInt, nil
+		return types.PrimitiveTypeInt, nil
 	case string:
-		return models.PrimitiveTypeString, nil
+		return types.PrimitiveTypeString, nil
 	default:
-		return models.PrimitiveTypeAny, nil
+		return types.PrimitiveTypeAny, nil
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 )
 
 type FunctionCallExpression struct {
@@ -12,27 +13,50 @@ type FunctionCallExpression struct {
 	loc      models.SourceLocation
 }
 
-func (fce *FunctionCallExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
-	funType, err := fce.Function.Type(tb)
+func (fce *FunctionCallExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
+	targetType, err := fce.Function.Type(tb)
 	if err != nil {
 		return nil, err
 	}
 
-	if funType != models.PrimitiveTypeFunction {
+	funType, ok := targetType.(types.FuncType)
+	if !ok {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("cannot call non-function %s", funType.String()),
 			SourceLocation: fce.Function.SourceLocation(),
 		}
 	}
 
-	for _, arg := range fce.Args {
-		_, err := arg.Type(tb)
-		if err != nil {
-			return nil, err
+	if len(fce.Args) != len(funType.ArgTypes) {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("expected %d arguments, got %d", len(funType.ArgTypes), len(fce.Args)),
+			SourceLocation: fce.SourceLocation(),
 		}
 	}
 
-	return models.PrimitiveTypeAny, nil
+	for i, arg := range fce.Args {
+		t, err := arg.Type(tb)
+		if err != nil {
+			return nil, err
+		}
+
+		funSuper, innerErr := types.IsSuperTo(funType.ArgTypes[i], t)
+		if innerErr != nil {
+			return nil, &models.InterpreterError{
+				Message:        fmt.Sprintf("expected %s, got %s", funType.ArgTypes[i].String(), t.String()),
+				SourceLocation: arg.SourceLocation(),
+				Underlying:     innerErr,
+			}
+		}
+		if !funSuper {
+			return nil, &models.InterpreterError{
+				Message:        fmt.Sprintf("expected %s, got %s", funType.ArgTypes[i].String(), t.String()),
+				SourceLocation: arg.SourceLocation(),
+			}
+		}
+	}
+
+	return funType.ReturnType, nil
 }
 
 func (fce *FunctionCallExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
@@ -41,7 +65,7 @@ func (fce *FunctionCallExpression) Evaluate(bindings models.Bindings) (any, *mod
 		return nil, err
 	}
 
-	fun, ok := f.(models.Function)
+	fun, ok := f.(types.Function)
 	if !ok {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("cannot call non-function %v", f),

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
@@ -14,8 +15,32 @@ type ForExpression struct {
 	loc        models.SourceLocation
 }
 
-func (fe *ForExpression) Type(_ models.TypeBindings) (models.Type, *models.InterpreterError) {
-	return models.PrimitiveTypeList, nil
+func (fe *ForExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
+	inType, err := fe.InClause.Type(tb)
+	if err != nil {
+		return nil, err
+	}
+
+	inTypeList, ok := inType.(types.ListType)
+	if !ok {
+		return nil, &models.InterpreterError{
+			Message:        fmt.Sprintf("for expression in clause must evaluate to a list; got %s", inType),
+			SourceLocation: fe.InClause.SourceLocation(),
+		}
+	}
+
+	innerTB := make(types.TypeBindings)
+	for k, v := range tb {
+		innerTB[k] = v
+	}
+	innerTB[fe.Identifier] = inTypeList.ElementType
+
+	forType, err := fe.ForClause.Type(innerTB)
+	if err != nil {
+		return nil, err
+	}
+
+	return types.List(forType), nil
 }
 
 func (fe *ForExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {

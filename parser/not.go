@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
@@ -10,20 +11,20 @@ type NotExpression struct {
 	loc   models.SourceLocation
 }
 
-func (ne *NotExpression) Type(tb models.TypeBindings) (models.Type, *models.InterpreterError) {
+func (ne *NotExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
 	innerType, err := ne.Inner.Type(tb)
 	if err != nil {
 		return nil, err
 	}
 
-	if innerType != models.PrimitiveTypeBool {
+	if innerType != types.PrimitiveTypeBool {
 		return nil, &models.InterpreterError{
 			Message:        "expected bool",
 			SourceLocation: ne.Inner.SourceLocation(),
 		}
 	}
 
-	return models.PrimitiveTypeBool, nil
+	return types.PrimitiveTypeBool, nil
 }
 
 func (ne *NotExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {

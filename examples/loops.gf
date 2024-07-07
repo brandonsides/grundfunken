@@ -1,1 +1,1 @@
-let f = func() atStr("012", 3) in f()
+let f = func() atStr("012", 2) in f()

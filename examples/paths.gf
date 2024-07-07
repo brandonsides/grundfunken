@@ -1,12 +1,12 @@
 let
     // general utils
-    tail = func(l)
+    tail = func(l [int]) [int]
         if len(l) <= 1 then
-            []
+            []int
         else
             l[1:],
     
-    filter = func(l, f)
+    filter = func(l[int], f func(any) bool) []
         if len(l) is 0 then
             []
         else
@@ -19,7 +19,7 @@ let
                 else
                     rest,
 
-    min = func(l)
+    min = func(l [int]) { min: int, idx: int } | bool
         if len(l) is 0 then
             // false indicates no minumum
             false
@@ -28,15 +28,19 @@ let
                 first = l[0],
                 minRest = min(tail(l))
             in
-                if minRest is false or first <= minRest.min then {
-                    min: first,
-                    idx: 0
-                } else {
-                    min: minRest.min,
-                    idx: minRest.idx + 1
-                },
+                match minRest as minRest
+                case { min: int, idx: int }
+                    if first <= minRest.min then {
+                        min: first,
+                        idx: 0
+                    } else {
+                        min: minRest.min,
+                        idx: minRest.idx + 1
+                    }
+                case bool
+                    { min: first, idx: 0 },
 
-    find = func(f, l)
+    find = func(f, l) int | bool
         if len(l) is 0 then
             // false indicates not found
             false
@@ -51,21 +55,23 @@ let
                 else
                     res + 1,
 
-    concatAll = func(l)
+    concatAll = func(l) string
         if len(l) is 0 then
             ""
         else
             concatStr(l[0], concatAll(tail(l))),
     
-    withIdxAs = func(l, i, v)
+    withIdxAs = func(l, i, v) []
         if i >= len(l) then l else
             concat(append(l[:i], v), l[i+1:]),
     
-    abs = func(a) if a < 0 then -1 * a else a,
+    abs = func(a) int
+        if a < 0 then -1 * a else a,
 
-    dist = func(a, b) abs(a.x - b.x) + abs(a.y - b.y),
+    dist = func(a, b) int
+        abs(a.x - b.x) + abs(a.y - b.y),
 
-    push = func(queue, item, cmp)
+    push = func(queue, item, cmp) []
         //let _ = print(concatAll(["pushing ", toString(item), " onto ", toString(queue)])) in
         if len(queue) is 0 then
             //let _ = print(concatAll(["queue is empty; returning [", toString(item), "]"])) in
@@ -93,7 +99,7 @@ let
     DIR_DOWN = 3,
 
     // maze utils
-    mazeTileString = func(tile)
+    mazeTileString = func(tile) string
         if tile is TILE_TYPE_EMPTY then
             " "
         else if tile is TILE_TYPE_WALL then
@@ -107,7 +113,7 @@ let
         else
             "?",
 
-    dirString = func(dir)
+    dirString = func(dir) string
         if dir is DIR_LEFT then
             "L"
         else if dir is DIR_UP then
@@ -119,7 +125,7 @@ let
         else
             "?",
 
-    mazeRowString = func(mazeRow, visitedRow, curX)
+    mazeRowString = func(mazeRow, visitedRow, curX) string
         let
             isVisited = func(x) visitedRow[x] is not false
         in
@@ -137,15 +143,15 @@ let
                     ))
             ) for x in range(0, len(mazeRow))),
 
-    mazeString = func(maze, visited, curX, curY)
+    mazeString = func(maze, visited, curX, curY) string
         concatAll(
             concatStr(mazeRowString(maze[i], visited[i], if i is curY then curX else false), "\n\n") for i in range(0, len(maze))
         ),
     
-    mazeRowWithCoordAs = func(mazeRow, x, tile)
+    mazeRowWithCoordAs = func(mazeRow, x, tile) []
         withIdxAs(mazeRow, x, tile),
 
-    mazeWithCoordsAs = func(maze, x, y, tile)
+    mazeWithCoordsAs = func(maze, x, y, tile) []
         if len(maze) is 0 then
             maze
         else
@@ -158,7 +164,7 @@ let
                 else
                     prepend(curRow, mazeWithCoordsAs(mazeRest, x, y-1, tile)),
     
-    findStart = func(maze)
+    findStart = func(maze) { x: int, y: int }
         let
             // in each row, try to find the start tile
             startIdxForEachRow = find(func(tile) tile is TILE_TYPE_START, row) for row in maze,
@@ -171,7 +177,7 @@ let
         },
 
 
-    findEnd = func(maze)
+    findEnd = func(maze) { x: int, y: int }
         let
             // in each row, try to find the start tile
             endIdxForEachRow = find(func(tile) tile is TILE_TYPE_END, row) for row in maze,
@@ -193,7 +199,7 @@ let
     // returns a 2D array that is the same as visited, but any coordinates
     // that we found a better path to are replaced by the
     // better paths
-    solveMazeHelper = func(maze, visited, queue, end)
+    solveMazeHelper = func(maze, visited, queue, end) []
         if
             len(queue) is 0
         then
@@ -251,9 +257,10 @@ let
                     in
                         solveMazeHelper(maze, visited, queue, end),
     
-    noneVisited = func(maze) (false for _ in mazeRow) for mazeRow in maze,
+    noneVisited = func(maze) [bool]
+        (false for _ in mazeRow) for mazeRow in maze,
 
-    drawFinishedMazeHelper = func(maze, coords, path)
+    drawFinishedMazeHelper = func(maze, coords, path) [[string]]
         let
             dottedMaze = withIdxAs(maze, coords.y, withIdxAs(maze[coords.y], coords.x, "."))
         in
@@ -277,7 +284,7 @@ let
                 in
                     if newCoords is false then [] else drawFinishedMazeHelper(dottedMaze, newCoords, tail(path)),
 
-    drawFinishedMaze = func(maze, path)
+    drawFinishedMaze = func(maze, path) string
         let rawMaze = (mazeTileString(tile) for tile in row) for row in maze,
             coords = findStart(maze)
         in
@@ -286,7 +293,7 @@ let
                     append(rowStrs, "\n")
                 ) for rowStrs in drawFinishedMazeHelper(rawMaze, coords, path)),
 
-    solveMaze = func(maze)
+    solveMaze = func(maze) []
         let
             startCoords = findStart(maze),
             endCoords = findEnd(maze),
