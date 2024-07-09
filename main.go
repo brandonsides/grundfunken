@@ -73,6 +73,28 @@ func interpret(inputFilePath string) (any, map[string][]string, error) {
 		return nil, lines, err
 	}
 
+	// evaluate the expression to get the final result
+	// with the top-level bindings for certain builtin
+	// identifiers
+	builtins["import"] = Builtin(
+		[]types.Arg{{
+			Name: "path",
+			Type: types.PrimitiveTypeString,
+		}},
+		func(argExps []models.Expression) types.Type {
+			
+		}
+		func(args []any) (any, error) {
+			path := args[0].(string)
+
+			ret, newLines, err := interpret(path)
+			for fileName, fileLines := range newLines {
+				lines[fileName] = fileLines
+			}
+			return ret, err
+		},
+	)
+
 	// parse the tokens into an "expression", which is a
 	// tree-like structure that represents the semantic
 	// relationships between the tokens
@@ -88,26 +110,6 @@ func interpret(inputFilePath string) (any, map[string][]string, error) {
 			SourceLocation: tok.SourceLocation,
 		}
 	}
-
-	// evaluate the expression to get the final result
-	// with the top-level bindings for certain builtin
-	// identifiers
-	builtins["import"] = Builtin(
-		[]types.Arg{{
-			Name: "path",
-			Type: types.PrimitiveTypeString,
-		}},
-		types.PrimitiveTypeAny,
-		func(args []any) (any, error) {
-			path := args[0].(string)
-
-			ret, newLines, err := interpret(path)
-			for fileName, fileLines := range newLines {
-				lines[fileName] = fileLines
-			}
-			return ret, err
-		},
-	)
 
 	var builtinTypes = map[string]types.Type{}
 	for name, f := range builtins {

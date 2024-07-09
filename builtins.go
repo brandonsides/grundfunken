@@ -6,16 +6,17 @@ import (
 	"os"
 	"time"
 
+	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/models/types"
 )
 
 type BuiltinFunction struct {
 	args []types.Arg
-	ret  types.Type
+	ret  func(argExps []models.Expression) types.Type
 	Fn   func([]any) (any, error)
 }
 
-func Builtin(args []types.Arg, ret types.Type, fn func([]any) (any, error)) types.Function {
+func Builtin(args []types.Arg, ret func(argExps []models.Expression) types.Type, fn func([]any) (any, error)) types.Function {
 	return &BuiltinFunction{
 		args: args,
 		ret:  ret,
@@ -42,8 +43,8 @@ func (f BuiltinFunction) Args() []types.Arg {
 	return f.args
 }
 
-func (f BuiltinFunction) Return() types.Type {
-	return f.ret
+func (f BuiltinFunction) Return(argExps []models.Expression) types.Type {
+	return f.ret(argExps)
 }
 
 var builtins = map[string]any{

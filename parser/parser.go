@@ -5,6 +5,6 @@ import (
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
-func ParseExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func ParseExpression(toks *tokens.TokenStack) (lines map[string]string, exp models.Expression, err *models.InterpreterError) {
 	return parseOrExpression(toks)
 }
