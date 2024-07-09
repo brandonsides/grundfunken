@@ -1,12 +1,33 @@
 let
     // general utils
-    tail = func(l [int]) [int]
+
+    tail = func(l [any]) [any]
         if len(l) <= 1 then
             []int
         else
             l[1:],
+
+    asInts = func(l [any]) [int] | bool
+        if len(l) is 0 then
+            []
+        else
+            let
+                first = l[0],
+                rest = asInts(tail(l))
+            in
+                match rest as rest
+                case [int]
+                    (
+                        match first as first
+                        case int
+                            prepend(first, rest)
+                        case any
+                            false
+                    )
+                case any
+                    false,
     
-    filter = func(l[int], f func(any) bool) []
+    filter = func(l[any], f func(any) bool) []
         if len(l) is 0 then
             []
         else
@@ -40,7 +61,7 @@ let
                 case bool
                     { min: first, idx: 0 },
 
-    find = func(f, l) int | bool
+    find = func(f func(any) bool, l []) int | bool
         if len(l) is 0 then
             // false indicates not found
             false

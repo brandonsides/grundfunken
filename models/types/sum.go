@@ -22,6 +22,9 @@ func Sum(types ...Type) Type {
 		if err != nil {
 			return nil
 		}
+		if retSuper {
+			continue
+		}
 		if tAsSum, ok := t.(sumType); ok {
 			flattenedT := Sum(tAsSum.Types...)
 
@@ -30,22 +33,19 @@ func Sum(types ...Type) Type {
 			} else {
 				ret.Types = append(ret.Types, flattenedT)
 			}
-		} else if retSuper {
-			continue
-		} else {
-			for i := 0; i < len(ret.Types); i++ {
-				tSuper, err := IsSuperTo(t, ret.Types[i])
-				if err != nil {
-					return nil
-				}
-				if tSuper {
-					ret = sumType{Types: append(append([]Type{}, ret.Types[:i]...), ret.Types[i+1:]...)}
-				} else {
-					i++
-				}
-			}
-			ret.Types = append(ret.Types, t)
 		}
+		for i := 0; i < len(ret.Types); {
+			tSuper, err := IsSuperTo(t, ret.Types[i])
+			if err != nil {
+				return nil
+			}
+			if tSuper {
+				ret = sumType{Types: append(append([]Type{}, ret.Types[:i]...), ret.Types[i+1:]...)}
+			} else {
+				i++
+			}
+		}
+		ret.Types = append(ret.Types, t)
 	}
 
 	if len(ret.Types) == 1 {

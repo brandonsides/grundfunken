@@ -73,6 +73,7 @@ func IsSuperTo(t1, t2 Type) (bool, error) {
 				return false, nil
 			}
 		}
+		return true, nil
 	} else if t1Sum, ok := t1.(sumType); ok {
 		for _, t1Addend := range t1Sum.Types {
 			superToAddend, err := IsSuperTo(t1Addend, t2)

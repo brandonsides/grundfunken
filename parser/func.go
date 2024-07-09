@@ -20,7 +20,7 @@ type FuncValue struct {
 	Exp      FunctionExpression
 }
 
-func (f FuncValue) Call(args []any) (any, error) {
+func (f *FuncValue) Call(args []any) (any, error) {
 	if len(args) != len(f.Exp.Args) {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("expected %d arguments, got %d", len(f.Exp.Args), len(args)),
@@ -41,8 +41,16 @@ func (f FuncValue) Call(args []any) (any, error) {
 	return ret, nil
 }
 
+func (f *FuncValue) Args() []types.Arg {
+	return f.Exp.Args
+}
+
+func (f *FuncValue) Return() types.Type {
+	return f.Exp.RetType
+}
+
 func (f *FuncValue) String() string {
-	return fmt.Sprintf("func(%v) { ... }", f.Exp.Args)
+	return fmt.Sprintf("func(%v) %v { ... }", f.Exp.Args, f.Exp.RetType)
 }
 
 func (fe *FunctionExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
