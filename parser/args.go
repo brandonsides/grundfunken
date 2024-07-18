@@ -2,12 +2,13 @@ package parser
 
 import (
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
-func parseExpressions(toks *tokens.TokenStack) (exps []models.Expression, err *models.InterpreterError) {
-	exps = make([]models.Expression, 0)
-	var exp models.Expression
+func parseExpressions(toks *tokens.TokenStack) (exps []expressions.Expression, err *models.InterpreterError) {
+	exps = make([]expressions.Expression, 0)
+	var exp expressions.Expression
 	for exp, err = ParseExpression(toks); err == nil; exp, err = ParseExpression(toks) {
 		if exp == nil {
 			return exps, nil

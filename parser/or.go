@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
 type OrExpression struct {
-	Left  models.Expression
-	Right models.Expression
+	Left  expressions.Expression
+	Right expressions.Expression
 }
 
 func (oe *OrExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
@@ -41,7 +42,7 @@ func (oe *OrExpression) Type(tb types.TypeBindings) (types.Type, *models.Interpr
 	return types.PrimitiveTypeBool, nil
 }
 
-func (oe *OrExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (oe *OrExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	v1, err := oe.Left.Evaluate(bindings)
 	if err != nil {
 		return nil, err
@@ -73,11 +74,11 @@ func (oe *OrExpression) Evaluate(bindings models.Bindings) (any, *models.Interpr
 	return v2Bool, nil
 }
 
-func (oe *OrExpression) SourceLocation() models.SourceLocation {
+func (oe *OrExpression) SourceLocation() *models.SourceLocation {
 	return oe.Left.SourceLocation()
 }
 
-func parseOrExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func parseOrExpression(toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	left, err := parseAndExpression(toks)
 	if err != nil {
 		return nil, err
@@ -86,7 +87,7 @@ func parseOrExpression(toks *tokens.TokenStack) (exp models.Expression, err *mod
 	return foldOr(left, toks)
 }
 
-func foldOr(first models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func foldOr(first expressions.Expression, toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	tok, ok := toks.Peek()
 	if !ok || tok.Type != tokens.OR {
 		return first, nil
@@ -94,7 +95,7 @@ func foldOr(first models.Expression, toks *tokens.TokenStack) (exp models.Expres
 	if first == nil {
 		return nil, &models.InterpreterError{
 			Message:        "expected expression",
-			SourceLocation: tok.SourceLocation,
+			SourceLocation: &tok.SourceLocation,
 		}
 	}
 	toks.Pop()

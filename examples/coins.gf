@@ -1,7 +1,21 @@
 let
+    asInts = func(l [any]) [int] | bool
+        if len(l) is 0 then
+            []int
+        else
+            match {first: l[0], rest: l[1:]} as firstAndRest
+            case {first: int, rest: [int]} (
+                    match i as i
+                    case int
+                        i
+                    case any
+                        0
+                ) for i in prepend(firstAndRest.first, firstAndRest.rest)
+            case any
+                false,
 
     // returns the least element in a list
-    min = func(l)
+    min = func(l [int])
         if len(l) is 0 then
             [-1, 0]
         else

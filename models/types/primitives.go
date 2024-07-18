@@ -27,17 +27,6 @@ func (t PrimitiveType) String() string {
 	}
 }
 
-func (t PrimitiveType) IsSuperTo(other Type) bool {
-	if t == PrimitiveTypeAny {
-		return true
-	}
-	otherPrimitive, ok := other.(PrimitiveType)
-	if !ok {
-		return false
-	}
-	return t == otherPrimitive
-}
-
 func ParsePrimitive(s string) PrimitiveType {
 	switch s {
 	case "int":

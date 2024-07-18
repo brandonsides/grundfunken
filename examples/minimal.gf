@@ -1,8 +1,4 @@
 let
-    f = func(m int) (int | bool)
-        if m % 2 is 0 then
-            m
-        else
-            false
+    upTo = func(x int) i for i in range(1, x+1)
 in
-    f(2)
+    upTo(10)

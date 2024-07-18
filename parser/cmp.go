@@ -4,14 +4,15 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
 type CmpExpression struct {
-	first  models.Expression
+	first  expressions.Expression
 	op     CmpOp
-	second models.Expression
+	second expressions.Expression
 }
 
 type CmpOp struct {
@@ -71,7 +72,7 @@ func (ce *CmpExpression) Type(tb types.TypeBindings) (types.Type, *models.Interp
 	return types.PrimitiveTypeBool, nil
 }
 
-func (ce *CmpExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (ce *CmpExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	v1, err := ce.first.Evaluate(bindings)
 	if err != nil {
 		return nil, err
@@ -110,16 +111,16 @@ func (ce *CmpExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	default:
 		return nil, &models.InterpreterError{
 			Message:        "invalid operator",
-			SourceLocation: ce.op.SourceLocation,
+			SourceLocation: &ce.op.SourceLocation,
 		}
 	}
 }
 
-func (ce *CmpExpression) SourceLocation() models.SourceLocation {
+func (ce *CmpExpression) SourceLocation() *models.SourceLocation {
 	return ce.first.SourceLocation()
 }
 
-func parseCmpExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func parseCmpExpression(toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	exp, err = parseAddExpression(toks)
 	if err != nil {
 		return nil, err
@@ -128,7 +129,7 @@ func parseCmpExpression(toks *tokens.TokenStack) (exp models.Expression, err *mo
 	return foldCmp(exp, toks)
 }
 
-func foldCmp(first models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func foldCmp(first expressions.Expression, toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	beginLoc := toks.CurrentSourceLocation()
 	tok, ok := toks.Peek()
 	if !ok {

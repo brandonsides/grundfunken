@@ -4,15 +4,16 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
 type ForExpression struct {
-	ForClause  models.Expression
+	ForClause  expressions.Expression
 	Identifier string
-	InClause   models.Expression
-	loc        models.SourceLocation
+	InClause   expressions.Expression
+	loc        *models.SourceLocation
 }
 
 func (fe *ForExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
@@ -43,10 +44,10 @@ func (fe *ForExpression) Type(tb types.TypeBindings) (types.Type, *models.Interp
 	return types.List(forType), nil
 }
 
-func (fe *ForExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (fe *ForExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	ret := make([]any, 0)
 
-	innerBindings := make(models.Bindings)
+	innerBindings := make(expressions.Bindings)
 	for k, v := range bindings {
 		innerBindings[k] = v
 	}
@@ -77,11 +78,11 @@ func (fe *ForExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	return ret, nil
 }
 
-func (fe *ForExpression) SourceLocation() models.SourceLocation {
+func (fe *ForExpression) SourceLocation() *models.SourceLocation {
 	return fe.loc
 }
 
-func parseForExpression(exp1 models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func parseForExpression(exp1 expressions.Expression, toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	beginLoc := toks.CurrentSourceLocation()
 
 	tok, ok := toks.Peek()
@@ -114,7 +115,7 @@ func parseForExpression(exp1 models.Expression, toks *tokens.TokenStack) (exp mo
 	if tok.Type != tokens.IN {
 		return nil, &models.InterpreterError{
 			Message:        "unexpected token; expected in clause",
-			SourceLocation: tok.SourceLocation,
+			SourceLocation: &tok.SourceLocation,
 		}
 	}
 	toks.Pop()

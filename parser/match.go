@@ -2,20 +2,21 @@ package parser
 
 import (
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
 type MatchExpression struct {
-	On   models.Expression
+	On   expressions.Expression
 	Arms []MatchArm
 	As   string
-	loc  models.SourceLocation
+	loc  *models.SourceLocation
 }
 
 type MatchArm struct {
 	Type types.Type
-	Exp  models.Expression
+	Exp  expressions.Expression
 }
 
 func (me *MatchExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
@@ -43,7 +44,7 @@ func (me *MatchExpression) Type(tb types.TypeBindings) (types.Type, *models.Inte
 	return types.Sum(typs...), nil
 }
 
-func (me *MatchExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (me *MatchExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	onVal, err := me.On.Evaluate(bindings)
 	if err != nil {
 		return nil, err
@@ -68,7 +69,7 @@ func (me *MatchExpression) Evaluate(bindings models.Bindings) (any, *models.Inte
 			}
 		}
 		if armSuper {
-			newBindings := make(models.Bindings)
+			newBindings := make(expressions.Bindings)
 			for k, v := range bindings {
 				newBindings[k] = v
 			}
@@ -83,11 +84,11 @@ func (me *MatchExpression) Evaluate(bindings models.Bindings) (any, *models.Inte
 	}
 }
 
-func (me *MatchExpression) SourceLocation() models.SourceLocation {
+func (me *MatchExpression) SourceLocation() *models.SourceLocation {
 	return me.loc
 }
 
-func parseMatchExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func parseMatchExpression(toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	tok, innerErr := toks.Pop()
 	if innerErr != nil {
 		return nil, &models.InterpreterError{
@@ -100,28 +101,7 @@ func parseMatchExpression(toks *tokens.TokenStack) (exp models.Expression, err *
 	if tok.Type != tokens.MATCH {
 		return nil, &models.InterpreterError{
 			Message:        "unexpected token; expected match expression",
-			SourceLocation: tok.SourceLocation,
-		}
-	}
-
-	onExp, err := ParseExpression(toks)
-	if err != nil {
-		return nil, err
-	}
-
-	tok, innerErr = toks.Pop()
-	if innerErr != nil {
-		return nil, &models.InterpreterError{
-			Message:        "expected match identifier",
-			SourceLocation: onExp.SourceLocation(),
-			Underlying:     innerErr,
-		}
-	}
-
-	if tok.Type != tokens.AS {
-		return nil, &models.InterpreterError{
-			Message:        "unexpected token; expected 'as'",
-			SourceLocation: tok.SourceLocation,
+			SourceLocation: &tok.SourceLocation,
 		}
 	}
 
@@ -129,7 +109,7 @@ func parseMatchExpression(toks *tokens.TokenStack) (exp models.Expression, err *
 	if innerErr != nil {
 		return nil, &models.InterpreterError{
 			Message:        "expected match identifier",
-			SourceLocation: onExp.SourceLocation(),
+			SourceLocation: toks.CurrentSourceLocation(),
 			Underlying:     innerErr,
 		}
 	}
@@ -137,10 +117,31 @@ func parseMatchExpression(toks *tokens.TokenStack) (exp models.Expression, err *
 	if tok.Type != tokens.IDENTIFIER {
 		return nil, &models.InterpreterError{
 			Message:        "unexpected token; expected identifier",
-			SourceLocation: tok.SourceLocation,
+			SourceLocation: &tok.SourceLocation,
 		}
 	}
 	id := tok.Value
+
+	tok, innerErr = toks.Pop()
+	if innerErr != nil {
+		return nil, &models.InterpreterError{
+			Message:        "expected match identifier",
+			SourceLocation: toks.CurrentSourceLocation(),
+			Underlying:     innerErr,
+		}
+	}
+
+	if tok.Type != tokens.ON {
+		return nil, &models.InterpreterError{
+			Message:        "unexpected token; expected 'on'",
+			SourceLocation: &tok.SourceLocation,
+		}
+	}
+
+	onExp, err := ParseExpression(toks)
+	if err != nil {
+		return nil, err
+	}
 
 	ret := &MatchExpression{
 		On:  onExp,
@@ -165,7 +166,7 @@ func parseMatchExpression(toks *tokens.TokenStack) (exp models.Expression, err *
 		if innerErr != nil {
 			return nil, &models.InterpreterError{
 				Message:        "expected type",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 				Underlying:     innerErr,
 			}
 		}
@@ -174,7 +175,7 @@ func parseMatchExpression(toks *tokens.TokenStack) (exp models.Expression, err *
 		if innerErr != nil {
 			return nil, &models.InterpreterError{
 				Message:        "expected expression",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 				Underlying:     err,
 			}
 		}

@@ -85,7 +85,7 @@ func interpret(inputFilePath string) (any, map[string][]string, error) {
 	if ok {
 		return nil, lines, &models.InterpreterError{
 			Message:        "unexpected token",
-			SourceLocation: tok.SourceLocation,
+			SourceLocation: &tok.SourceLocation,
 		}
 	}
 
@@ -148,9 +148,29 @@ func reportHelper(err error, lines map[string][]string) {
 		reportHelper(interpreterErr.Underlying, lines)
 	}
 
-	fmt.Printf("in file %s at line %d, column %d: %s\n", interpreterErr.SourceLocation.File, interpreterErr.SourceLocation.LineNumber+1, interpreterErr.SourceLocation.ColumnNumber+1, interpreterErr.Error())
-	fmt.Println(lines[interpreterErr.SourceLocation.File][interpreterErr.SourceLocation.LineNumber])
-	fmt.Println(underlineError(interpreterErr.SourceLocation.ColumnNumber))
+	if interpreterErr.SourceLocation != nil {
+		highlight, _ := highlightLocation(lines, interpreterErr.Error(), *interpreterErr.SourceLocation)
+		fmt.Println(highlight)
+	}
+}
+
+func highlightLocation(lines map[string][]string, errStr string, loc models.SourceLocation) (string, bool) {
+	fileLines, ok := lines[loc.File]
+	if !ok || loc.LineNumber >= len(fileLines) {
+		return errStr, false
+	}
+
+	line := fileLines[loc.LineNumber]
+
+	return fmt.Sprintf(
+		"in file %s at line %d, column %d: %s\n\n%s\n%s",
+		loc.File,
+		loc.LineNumber+1,
+		loc.ColumnNumber+1,
+		errStr,
+		line,
+		underlineError(loc.ColumnNumber),
+	), true
 }
 
 func underlineError(col int) string {

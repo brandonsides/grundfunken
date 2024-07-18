@@ -4,10 +4,11 @@ import (
 	"strconv"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
-func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func parseAtomic(toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	beginLoc := toks.CurrentSourceLocation()
 
 	tok, ok := toks.Peek()
@@ -38,7 +39,7 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 		if tok.Type != tokens.RIGHT_PAREN {
 			return nil, &models.InterpreterError{
 				Message:        "expected closing parenthesis",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 			}
 		}
 	case tokens.NUMBER, tokens.MINUS:
@@ -68,7 +69,7 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 		if tok.Type != tokens.NUMBER {
 			return nil, &models.InterpreterError{
 				Message:        "unexpected token; expected number",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 			}
 		}
 
@@ -79,7 +80,7 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 			return nil, &models.InterpreterError{
 				Message:        "failed to parse number literal",
 				Underlying:     innerErr,
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 			}
 		}
 
@@ -146,11 +147,12 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 		return nil, err
 	}
 
-	for tok, ok := toks.Peek(); ok && (tok.Type == tokens.LEFT_SQUARE_BRACKET || tok.Type == tokens.LEFT_PAREN || tok.Type == tokens.DOT); tok, ok = toks.Peek() {
+	for tok, ok := toks.Peek(); ok; tok, ok = toks.Peek() {
+		shouldBreak := false
 		switch tok.Type {
 		case tokens.LEFT_PAREN:
 			parenLoc := tok.SourceLocation
-			var exps []models.Expression
+			var exps []expressions.Expression
 
 			toks.Pop()
 			exps, err = parseExpressions(toks)
@@ -162,7 +164,7 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 			if innerErr != nil {
 				return nil, &models.InterpreterError{
 					Message:        "to terminate function call",
-					SourceLocation: parenLoc,
+					SourceLocation: &parenLoc,
 					Underlying: &models.InterpreterError{
 						Message:        "expected closing parenthesis",
 						SourceLocation: toks.CurrentSourceLocation(),
@@ -173,10 +175,10 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 			if tok.Type != tokens.RIGHT_PAREN {
 				return nil, &models.InterpreterError{
 					Message:        "to terminate function call",
-					SourceLocation: parenLoc,
+					SourceLocation: &parenLoc,
 					Underlying: &models.InterpreterError{
 						Message:        "unexpected token; expected closing parenthesis",
-						SourceLocation: tok.SourceLocation,
+						SourceLocation: &tok.SourceLocation,
 					},
 				}
 			}
@@ -198,7 +200,7 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 			if innerErr != nil {
 				return nil, &models.InterpreterError{
 					Message:        "to terminate array index",
-					SourceLocation: bracketLoc,
+					SourceLocation: &bracketLoc,
 					Underlying: &models.InterpreterError{
 						Message:        "expected closing square bracket",
 						SourceLocation: exp.SourceLocation(),
@@ -208,10 +210,10 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 			if tok.Type != tokens.RIGHT_SQUARE_BRACKET {
 				return nil, &models.InterpreterError{
 					Message:        "to terminate array index",
-					SourceLocation: bracketLoc,
+					SourceLocation: &bracketLoc,
 					Underlying: &models.InterpreterError{
 						Message:        "unexpected token; expected closing square bracket",
-						SourceLocation: tok.SourceLocation,
+						SourceLocation: &tok.SourceLocation,
 					},
 				}
 			}
@@ -223,7 +225,7 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 			if innerErr != nil {
 				return nil, &models.InterpreterError{
 					Message:        "in object field access",
-					SourceLocation: dotLoc,
+					SourceLocation: &dotLoc,
 					Underlying: &models.InterpreterError{
 						Message:        "expected identifier",
 						SourceLocation: toks.CurrentSourceLocation(),
@@ -235,7 +237,7 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 			if tok.Type != tokens.IDENTIFIER {
 				return nil, &models.InterpreterError{
 					Message:        "unexpected token; expected identifier",
-					SourceLocation: tok.SourceLocation,
+					SourceLocation: &tok.SourceLocation,
 				}
 			}
 			exp = &FieldAccessExpression{
@@ -243,6 +245,28 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 				Field:    tok.Value,
 				fieldLoc: tok.SourceLocation,
 			}
+		case tokens.AS:
+			asLoc := tok.SourceLocation
+			toks.Pop()
+
+			castType, err := parseType(toks)
+			if err != nil {
+				return nil, &models.InterpreterError{
+					Underlying:     err,
+					SourceLocation: toks.CurrentSourceLocation(),
+				}
+			}
+
+			exp = &AsExpression{
+				exp:   exp,
+				typ:   castType,
+				asLoc: asLoc,
+			}
+		default:
+			shouldBreak = true
+		}
+		if shouldBreak {
+			break
 		}
 	}
 

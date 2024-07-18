@@ -52,6 +52,7 @@ const (
 	NOT
 	IS
 	MATCH
+	ON
 	CASE
 	AS
 )
@@ -90,6 +91,7 @@ var tokMap = map[string]TokenType{
 	"match": MATCH,
 	"as":    AS,
 	"case":  CASE,
+	"on":    ON,
 }
 
 type Token struct {
@@ -103,8 +105,8 @@ type TokenStack struct {
 	curLoc models.SourceLocation
 }
 
-func (stack *TokenStack) CurrentSourceLocation() models.SourceLocation {
-	return stack.curLoc
+func (stack *TokenStack) CurrentSourceLocation() *models.SourceLocation {
+	return &stack.curLoc
 }
 
 // Pop removes and returns the next token in the stack
@@ -187,7 +189,7 @@ func tokenizeLine(file string, line string, lineNumber int) ([]Token, *models.In
 			if err != nil {
 				return nil, &models.InterpreterError{
 					Underlying: err,
-					SourceLocation: models.SourceLocation{
+					SourceLocation: &models.SourceLocation{
 						File:         file,
 						LineNumber:   lineNumber,
 						ColumnNumber: col + length,
@@ -206,7 +208,7 @@ func tokenizeLine(file string, line string, lineNumber int) ([]Token, *models.In
 			if err != nil {
 				return nil, &models.InterpreterError{
 					Underlying: err,
-					SourceLocation: models.SourceLocation{
+					SourceLocation: &models.SourceLocation{
 						File:         file,
 						LineNumber:   lineNumber,
 						ColumnNumber: col + length,
@@ -225,7 +227,7 @@ func tokenizeLine(file string, line string, lineNumber int) ([]Token, *models.In
 			if err != nil {
 				return nil, &models.InterpreterError{
 					Underlying: err,
-					SourceLocation: models.SourceLocation{
+					SourceLocation: &models.SourceLocation{
 						File:         file,
 						LineNumber:   lineNumber,
 						ColumnNumber: col + length,
@@ -242,7 +244,7 @@ func tokenizeLine(file string, line string, lineNumber int) ([]Token, *models.In
 		} else {
 			return nil, &models.InterpreterError{
 				Underlying: fmt.Errorf("unexpected character %c", char),
-				SourceLocation: models.SourceLocation{
+				SourceLocation: &models.SourceLocation{
 					File:         file,
 					LineNumber:   lineNumber,
 					ColumnNumber: col,

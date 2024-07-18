@@ -2,13 +2,14 @@ package parser
 
 import (
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
 type EqExpression struct {
-	Left  models.Expression
-	Right models.Expression
+	Left  expressions.Expression
+	Right expressions.Expression
 	Op    EqOp
 }
 
@@ -28,7 +29,7 @@ func (ee *EqExpression) Type(tb types.TypeBindings) (types.Type, *models.Interpr
 	return types.PrimitiveTypeBool, nil
 }
 
-func (ee *EqExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (ee *EqExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	v1, err := ee.Left.Evaluate(bindings)
 	if err != nil {
 		return nil, err
@@ -47,16 +48,16 @@ func (ee *EqExpression) Evaluate(bindings models.Bindings) (any, *models.Interpr
 	default:
 		return nil, &models.InterpreterError{
 			Message:        "invalid operator",
-			SourceLocation: ee.Op.SourceLocation,
+			SourceLocation: &ee.Op.SourceLocation,
 		}
 	}
 }
 
-func (ee *EqExpression) SourceLocation() models.SourceLocation {
+func (ee *EqExpression) SourceLocation() *models.SourceLocation {
 	return ee.Left.SourceLocation()
 }
 
-func parseEqExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func parseEqExpression(toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	left, err := parseCmpExpression(toks)
 	if err != nil {
 		return nil, err
@@ -65,7 +66,7 @@ func parseEqExpression(toks *tokens.TokenStack) (exp models.Expression, err *mod
 	return foldEq(left, toks)
 }
 
-func foldEq(first models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func foldEq(first expressions.Expression, toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	var op *EqOp
 	op, err = parseEqOp(toks)
 	if err != nil {

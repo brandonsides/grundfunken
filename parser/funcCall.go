@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 )
 
 type FunctionCallExpression struct {
-	Function models.Expression
-	Args     []models.Expression
-	loc      models.SourceLocation
+	Function expressions.Expression
+	Args     []expressions.Expression
+	loc      *models.SourceLocation
 }
 
 func (fce *FunctionCallExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
@@ -22,7 +23,7 @@ func (fce *FunctionCallExpression) Type(tb types.TypeBindings) (types.Type, *mod
 	funType, ok := targetType.(types.FuncType)
 	if !ok {
 		return nil, &models.InterpreterError{
-			Message:        fmt.Sprintf("cannot call non-function %s", funType.String()),
+			Message:        fmt.Sprintf("cannot call non-function %s", targetType.String()),
 			SourceLocation: fce.Function.SourceLocation(),
 		}
 	}
@@ -59,7 +60,7 @@ func (fce *FunctionCallExpression) Type(tb types.TypeBindings) (types.Type, *mod
 	return funType.ReturnType, nil
 }
 
-func (fce *FunctionCallExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (fce *FunctionCallExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	f, err := fce.Function.Evaluate(bindings)
 	if err != nil {
 		return nil, err
@@ -98,6 +99,6 @@ func (fce *FunctionCallExpression) Evaluate(bindings models.Bindings) (any, *mod
 	return ret, nil
 }
 
-func (fce *FunctionCallExpression) SourceLocation() models.SourceLocation {
+func (fce *FunctionCallExpression) SourceLocation() *models.SourceLocation {
 	return fce.loc
 }

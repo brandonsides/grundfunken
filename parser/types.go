@@ -56,7 +56,7 @@ func parseFuncType(toks *tokens.TokenStack) (types.Type, error) {
 	if tok.Type != tokens.LEFT_PAREN {
 		return nil, &models.InterpreterError{
 			Message:        "unexpected token; expected opening parenthesis",
-			SourceLocation: tok.SourceLocation,
+			SourceLocation: &tok.SourceLocation,
 		}
 	}
 
@@ -84,7 +84,7 @@ func parseFuncType(toks *tokens.TokenStack) (types.Type, error) {
 		if tok.Type != tokens.COMMA {
 			return nil, &models.InterpreterError{
 				Message:        "unexpected token; expected comma or closing parenthesis",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 			}
 		}
 	}
@@ -123,7 +123,7 @@ func parseAtomicType(toks *tokens.TokenStack) (types.Type, error) {
 		if tok.Type != tokens.RIGHT_PAREN {
 			return nil, &models.InterpreterError{
 				Message:        "unexpected token; expected closing parenthesis",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 			}
 		}
 
@@ -156,7 +156,7 @@ func parseAtomicType(toks *tokens.TokenStack) (types.Type, error) {
 		if tok.Type != tokens.RIGHT_SQUARE_BRACKET {
 			return nil, &models.InterpreterError{
 				Message:        "unexpected token; expected closing square bracket",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 			}
 		}
 
@@ -185,7 +185,7 @@ func parseObjectType(toks *tokens.TokenStack) (types.Type, error) {
 	if tok.Type != tokens.LEFT_SQUIGGLY_BRACKET {
 		return nil, &models.InterpreterError{
 			Message:        "unexpected token; expected opening squiggly bracket",
-			SourceLocation: tok.SourceLocation,
+			SourceLocation: &tok.SourceLocation,
 		}
 	}
 
@@ -206,7 +206,7 @@ func parseObjectType(toks *tokens.TokenStack) (types.Type, error) {
 		if tok.Type != tokens.IDENTIFIER {
 			return nil, &models.InterpreterError{
 				Message:        "unexpected token; expected identifier or closing squiggly bracket",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 			}
 		}
 		fieldName := tok.Value
@@ -222,7 +222,7 @@ func parseObjectType(toks *tokens.TokenStack) (types.Type, error) {
 		if tok.Type != tokens.COLON {
 			return nil, &models.InterpreterError{
 				Message:        "unexpected token; expected colon",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 			}
 		}
 
@@ -248,7 +248,7 @@ func parseObjectType(toks *tokens.TokenStack) (types.Type, error) {
 		if tok.Type != tokens.COMMA {
 			return nil, &models.InterpreterError{
 				Message:        "unexpected token; expected comma or closing squiggly bracket",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 			}
 		}
 	}

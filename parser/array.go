@@ -2,14 +2,15 @@ package parser
 
 import (
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
 type ArrayLiteralExpression struct {
 	elemType types.Type
-	val      []models.Expression
-	loc      models.SourceLocation
+	val      []expressions.Expression
+	loc      *models.SourceLocation
 }
 
 func (ale *ArrayLiteralExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
@@ -42,7 +43,7 @@ func (ale *ArrayLiteralExpression) Type(tb types.TypeBindings) (types.Type, *mod
 	return types.List(ale.elemType), nil
 }
 
-func (ale *ArrayLiteralExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (ale *ArrayLiteralExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	ret := make([]any, 0)
 	for _, v := range ale.val {
 		retVal, err := v.Evaluate(bindings)
@@ -56,11 +57,11 @@ func (ale *ArrayLiteralExpression) Evaluate(bindings models.Bindings) (any, *mod
 	return ret, nil
 }
 
-func (ale *ArrayLiteralExpression) SourceLocation() models.SourceLocation {
+func (ale *ArrayLiteralExpression) SourceLocation() *models.SourceLocation {
 	return ale.loc
 }
 
-func parseArrayLiteral(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func parseArrayLiteral(toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	beginSourceLocation := toks.CurrentSourceLocation()
 
 	tok, ok := toks.Peek()
@@ -74,7 +75,7 @@ func parseArrayLiteral(toks *tokens.TokenStack) (exp models.Expression, err *mod
 	if tok.Type != tokens.LEFT_SQUARE_BRACKET {
 		return nil, &models.InterpreterError{
 			Message:        "unexpected token",
-			SourceLocation: tok.SourceLocation,
+			SourceLocation: &tok.SourceLocation,
 		}
 	}
 	toks.Pop()
@@ -103,7 +104,7 @@ func parseArrayLiteral(toks *tokens.TokenStack) (exp models.Expression, err *mod
 			SourceLocation: beginSourceLocation,
 			Underlying: &models.InterpreterError{
 				Message:        "unexpected token; expected closing square bracket",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 			},
 		}
 	}

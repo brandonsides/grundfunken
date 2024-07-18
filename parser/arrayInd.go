@@ -4,14 +4,15 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
 type ArrayAccessExpression struct {
-	Array models.Expression
-	Index models.Expression
-	loc   models.SourceLocation
+	Array expressions.Expression
+	Index expressions.Expression
+	loc   *models.SourceLocation
 }
 
 func (aae *ArrayAccessExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
@@ -31,7 +32,7 @@ func (aae *ArrayAccessExpression) Type(tb types.TypeBindings) (types.Type, *mode
 	return tList.ElementType, nil
 }
 
-func (aae *ArrayAccessExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (aae *ArrayAccessExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	arr, err := aae.Array.Evaluate(bindings)
 	if err != nil {
 		return nil, err
@@ -66,15 +67,15 @@ func (aae *ArrayAccessExpression) Evaluate(bindings models.Bindings) (any, *mode
 	return arrSlice[indexInt], nil
 }
 
-func (aae *ArrayAccessExpression) SourceLocation() models.SourceLocation {
+func (aae *ArrayAccessExpression) SourceLocation() *models.SourceLocation {
 	return aae.loc
 }
 
 type ArraySliceExpression struct {
-	Array models.Expression
-	Begin *models.Expression
-	End   *models.Expression
-	loc   models.SourceLocation
+	Array expressions.Expression
+	Begin *expressions.Expression
+	End   *expressions.Expression
+	loc   *models.SourceLocation
 }
 
 func (ase *ArraySliceExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
@@ -112,7 +113,7 @@ func (ase *ArraySliceExpression) Type(tb types.TypeBindings) (types.Type, *model
 	return t, nil
 }
 
-func (ase *ArraySliceExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (ase *ArraySliceExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	arr, err := ase.Array.Evaluate(bindings)
 	if err != nil {
 		return nil, err
@@ -179,11 +180,11 @@ func (ase *ArraySliceExpression) Evaluate(bindings models.Bindings) (any, *model
 	return arrSlice[beginInt:endInt], nil
 }
 
-func (ase *ArraySliceExpression) SourceLocation() models.SourceLocation {
+func (ase *ArraySliceExpression) SourceLocation() *models.SourceLocation {
 	return ase.loc
 }
 
-func parseArrayIndex(arr models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func parseArrayIndex(arr expressions.Expression, toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	beginLoc := toks.CurrentSourceLocation()
 
 	tok, ok := toks.Peek()
@@ -194,9 +195,9 @@ func parseArrayIndex(arr models.Expression, toks *tokens.TokenStack) (exp models
 		}
 	}
 
-	var idx *models.Expression
+	var idx *expressions.Expression
 	if tok.Type != tokens.COLON {
-		var idxVal models.Expression
+		var idxVal expressions.Expression
 		idxVal, err = ParseExpression(toks)
 		if err != nil {
 			return nil, err
@@ -221,8 +222,8 @@ func parseArrayIndex(arr models.Expression, toks *tokens.TokenStack) (exp models
 	if tok.Type == tokens.COLON {
 		toks.Pop()
 
-		var idx2 *models.Expression
-		var idxVal models.Expression
+		var idx2 *expressions.Expression
+		var idxVal expressions.Expression
 		idxVal, err = ParseExpression(toks)
 		if err != nil {
 			return nil, err

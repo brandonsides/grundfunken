@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
 type AndExpression struct {
-	Left  models.Expression
-	Right models.Expression
+	Left  expressions.Expression
+	Right expressions.Expression
 }
 
 func (ae *AndExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
@@ -41,7 +42,7 @@ func (ae *AndExpression) Type(tb types.TypeBindings) (types.Type, *models.Interp
 	return types.PrimitiveTypeBool, nil
 }
 
-func (ae *AndExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (ae *AndExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	v1, err := ae.Left.Evaluate(bindings)
 	if err != nil {
 		return nil, err
@@ -73,11 +74,11 @@ func (ae *AndExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	return v2Bool, nil
 }
 
-func (ae *AndExpression) SourceLocation() models.SourceLocation {
+func (ae *AndExpression) SourceLocation() *models.SourceLocation {
 	return ae.Left.SourceLocation()
 }
 
-func parseAndExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func parseAndExpression(toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	left, err := parseEqExpression(toks)
 	if err != nil {
 		return nil, err
@@ -86,7 +87,7 @@ func parseAndExpression(toks *tokens.TokenStack) (exp models.Expression, err *mo
 	return foldAnd(left, toks)
 }
 
-func foldAnd(first models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func foldAnd(first expressions.Expression, toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	tok, ok := toks.Peek()
 	if !ok || tok.Type != tokens.AND {
 		return first, nil

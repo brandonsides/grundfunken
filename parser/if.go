@@ -4,15 +4,16 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
 type IfExpression struct {
-	Condition models.Expression
-	Then      models.Expression
-	Else      models.Expression
-	loc       models.SourceLocation
+	Condition expressions.Expression
+	Then      expressions.Expression
+	Else      expressions.Expression
+	loc       *models.SourceLocation
 }
 
 func (ie *IfExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
@@ -41,7 +42,7 @@ func (ie *IfExpression) Type(tb types.TypeBindings) (types.Type, *models.Interpr
 	return types.Sum(thenType, elseType), nil
 }
 
-func (ie *IfExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (ie *IfExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	cond, err := ie.Condition.Evaluate(bindings)
 	if err != nil {
 		return nil, err
@@ -62,11 +63,11 @@ func (ie *IfExpression) Evaluate(bindings models.Bindings) (any, *models.Interpr
 	return ie.Else.Evaluate(bindings)
 }
 
-func (ie *IfExpression) SourceLocation() models.SourceLocation {
+func (ie *IfExpression) SourceLocation() *models.SourceLocation {
 	return ie.loc
 }
 
-func parseIfExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func parseIfExpression(toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	beginLoc := toks.CurrentSourceLocation()
 
 	tok, ok := toks.Peek()
@@ -80,7 +81,7 @@ func parseIfExpression(toks *tokens.TokenStack) (exp models.Expression, err *mod
 	if tok.Type != tokens.IF {
 		return nil, &models.InterpreterError{
 			Message:        "unexpected token; expected \"if\" clause",
-			SourceLocation: tok.SourceLocation,
+			SourceLocation: &tok.SourceLocation,
 		}
 	}
 	toks.Pop()
@@ -108,7 +109,7 @@ func parseIfExpression(toks *tokens.TokenStack) (exp models.Expression, err *mod
 			SourceLocation: beginLoc,
 			Underlying: &models.InterpreterError{
 				Message:        "unexpected token; expected \"then\" clause",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 			},
 		}
 	}
@@ -137,7 +138,7 @@ func parseIfExpression(toks *tokens.TokenStack) (exp models.Expression, err *mod
 			SourceLocation: beginLoc,
 			Underlying: &models.InterpreterError{
 				Message:        "unexpected token; expected \"else\" clause",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 			},
 		}
 	}

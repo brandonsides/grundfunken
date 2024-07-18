@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
@@ -11,12 +12,12 @@ import (
 type FunctionExpression struct {
 	Args    []types.Arg
 	RetType types.Type
-	body    models.Expression
-	loc     models.SourceLocation
+	body    expressions.Expression
+	loc     *models.SourceLocation
 }
 
 type FuncValue struct {
-	Bindings models.Bindings
+	Bindings expressions.Bindings
 	Exp      FunctionExpression
 }
 
@@ -27,7 +28,7 @@ func (f *FuncValue) Call(args []any) (any, error) {
 			SourceLocation: f.Exp.loc,
 		}
 	}
-	newBindings := make(models.Bindings)
+	newBindings := make(expressions.Bindings)
 	for k, v := range f.Bindings {
 		newBindings[k] = v
 	}
@@ -89,9 +90,9 @@ func (fe *FunctionExpression) Type(tb types.TypeBindings) (types.Type, *models.I
 	return types.Func(argTypes, retType), nil
 }
 
-func (fe *FunctionExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (fe *FunctionExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	// capture the current bindings
-	retBindings := make(models.Bindings)
+	retBindings := make(expressions.Bindings)
 	for k, v := range bindings {
 		retBindings[k] = v
 	}
@@ -102,11 +103,11 @@ func (fe *FunctionExpression) Evaluate(bindings models.Bindings) (any, *models.I
 	}, nil
 }
 
-func (fe *FunctionExpression) SourceLocation() models.SourceLocation {
+func (fe *FunctionExpression) SourceLocation() *models.SourceLocation {
 	return fe.loc
 }
 
-func parseFunction(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func parseFunction(toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	beginLoc := toks.CurrentSourceLocation()
 
 	tok, ok := toks.Peek()
@@ -120,7 +121,7 @@ func parseFunction(toks *tokens.TokenStack) (exp models.Expression, err *models.
 	if tok.Type != tokens.FUNC {
 		return nil, &models.InterpreterError{
 			Message:        "unexpected token; expected function declaration",
-			SourceLocation: tok.SourceLocation,
+			SourceLocation: &tok.SourceLocation,
 		}
 	}
 	toks.Pop()
@@ -136,7 +137,7 @@ func parseFunction(toks *tokens.TokenStack) (exp models.Expression, err *models.
 	if tok.Type != tokens.LEFT_PAREN {
 		return nil, &models.InterpreterError{
 			Message:        "unexpected token; expected left parenthesis",
-			SourceLocation: tok.SourceLocation,
+			SourceLocation: &tok.SourceLocation,
 		}
 	}
 	toks.Pop()
@@ -151,7 +152,7 @@ func parseFunction(toks *tokens.TokenStack) (exp models.Expression, err *models.
 		if tok.Type != tokens.IDENTIFIER {
 			return nil, &models.InterpreterError{
 				Message:        "unexpected token; expected identifier",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 			}
 		}
 		argLoc := tok.SourceLocation
@@ -161,11 +162,11 @@ func parseFunction(toks *tokens.TokenStack) (exp models.Expression, err *models.
 		if !ok {
 			return nil, &models.InterpreterError{
 				Message:        "after argument declaration",
-				SourceLocation: argLoc,
+				SourceLocation: &argLoc,
 				Underlying: &models.InterpreterError{
 					Message:        "expected comma or closing parenthesis",
 					Underlying:     popErr,
-					SourceLocation: tok.SourceLocation,
+					SourceLocation: &tok.SourceLocation,
 				},
 			}
 		}
@@ -177,7 +178,7 @@ func parseFunction(toks *tokens.TokenStack) (exp models.Expression, err *models.
 			if innerErr != nil {
 				return nil, &models.InterpreterError{
 					Message:        "after argument declaration",
-					SourceLocation: argLoc,
+					SourceLocation: &argLoc,
 					Underlying:     innerErr,
 				}
 			}
@@ -201,7 +202,7 @@ func parseFunction(toks *tokens.TokenStack) (exp models.Expression, err *models.
 		if tok.Type != tokens.COMMA {
 			return nil, &models.InterpreterError{
 				Message:        "unexpected token; expected comma or closing parenthesis",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 			}
 		}
 	}

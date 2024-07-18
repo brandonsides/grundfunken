@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 )
 
@@ -23,13 +24,13 @@ func (le *LiteralExpression) Type(tb types.TypeBindings) (types.Type, *models.In
 	}
 }
 
-func (le *LiteralExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (le *LiteralExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	if le == nil {
 		return nil, nil
 	}
 	return le.val, nil
 }
 
-func (le *LiteralExpression) SourceLocation() models.SourceLocation {
-	return le.loc
+func (le *LiteralExpression) SourceLocation() *models.SourceLocation {
+	return &le.loc
 }

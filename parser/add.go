@@ -4,14 +4,15 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
 type AddExpression struct {
 	op     tokens.Token
-	first  models.Expression
-	second models.Expression
+	first  expressions.Expression
+	second expressions.Expression
 }
 
 func (ae *AddExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
@@ -23,7 +24,7 @@ func (ae *AddExpression) Type(tb types.TypeBindings) (types.Type, *models.Interp
 	if firstType != types.PrimitiveTypeInt {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", ae.op.Value, firstType),
-			SourceLocation: ae.op.SourceLocation,
+			SourceLocation: &ae.op.SourceLocation,
 		}
 	}
 
@@ -35,14 +36,14 @@ func (ae *AddExpression) Type(tb types.TypeBindings) (types.Type, *models.Interp
 	if secondType != types.PrimitiveTypeInt {
 		return nil, &models.InterpreterError{
 			Message:        fmt.Sprintf("operator '%s' cannot be applied to type %s", ae.op.Value, secondType),
-			SourceLocation: ae.op.SourceLocation,
+			SourceLocation: &ae.op.SourceLocation,
 		}
 	}
 
 	return types.PrimitiveTypeInt, nil
 }
 
-func (ae *AddExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (ae *AddExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	v1, err := ae.first.Evaluate(bindings)
 	if err != nil {
 		return nil, err
@@ -75,16 +76,16 @@ func (ae *AddExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	default:
 		return nil, &models.InterpreterError{
 			Message:        "invalid operator",
-			SourceLocation: ae.op.SourceLocation,
+			SourceLocation: &ae.op.SourceLocation,
 		}
 	}
 }
 
-func (ae *AddExpression) SourceLocation() models.SourceLocation {
+func (ae *AddExpression) SourceLocation() *models.SourceLocation {
 	return ae.first.SourceLocation()
 }
 
-func parseAddExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func parseAddExpression(toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	exp, err = parseMulExpression(toks)
 	if err != nil {
 		return nil, err
@@ -93,15 +94,15 @@ func parseAddExpression(toks *tokens.TokenStack) (exp models.Expression, err *mo
 	return foldAdd(exp, toks)
 }
 
-func foldAdd(first models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func foldAdd(first expressions.Expression, toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	tok, ok := toks.Peek()
 	if !ok || tok.Type != tokens.PLUS && tok.Type != tokens.MINUS {
 		return first, nil
 	}
 	toks.Pop()
 
-	var withNext models.Expression
-	var next models.Expression
+	var withNext expressions.Expression
+	var next expressions.Expression
 	next, err = parseMulExpression(toks)
 	if err != nil {
 		return first, err

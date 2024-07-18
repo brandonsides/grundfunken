@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 )
 
@@ -14,25 +15,25 @@ func (ie *IdentifierExpression) Type(tb types.TypeBindings) (types.Type, *models
 	if _, ok := tb[ie.name]; !ok {
 		return nil, &models.InterpreterError{
 			Message:        "cannot type unbound identifier",
-			SourceLocation: ie.loc,
+			SourceLocation: &ie.loc,
 		}
 	}
 
 	return tb[ie.name], nil
 }
 
-func (ie *IdentifierExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (ie *IdentifierExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	ret, ok := map[string]any(bindings)[ie.name]
 	if !ok {
 		return nil, &models.InterpreterError{
 			Message:        "cannot evaluate unbound identifier",
-			SourceLocation: ie.loc,
+			SourceLocation: &ie.loc,
 		}
 	}
 
 	return ret, nil
 }
 
-func (ie *IdentifierExpression) SourceLocation() models.SourceLocation {
-	return ie.loc
+func (ie *IdentifierExpression) SourceLocation() *models.SourceLocation {
+	return &ie.loc
 }

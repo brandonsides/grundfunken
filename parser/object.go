@@ -2,13 +2,14 @@ package parser
 
 import (
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
 type ObjectLiteralExpression struct {
-	Fields map[string]models.Expression
-	loc    models.SourceLocation
+	Fields map[string]expressions.Expression
+	loc    *models.SourceLocation
 }
 
 func (ole *ObjectLiteralExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
@@ -23,7 +24,7 @@ func (ole *ObjectLiteralExpression) Type(tb types.TypeBindings) (types.Type, *mo
 	return types.Object(fieldTypes), nil
 }
 
-func (ole *ObjectLiteralExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (ole *ObjectLiteralExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	newBindings := make(map[string]any)
 	for key, value := range bindings {
 		newBindings[key] = value
@@ -42,11 +43,11 @@ func (ole *ObjectLiteralExpression) Evaluate(bindings models.Bindings) (any, *mo
 	return obj, nil
 }
 
-func (ole *ObjectLiteralExpression) SourceLocation() models.SourceLocation {
+func (ole *ObjectLiteralExpression) SourceLocation() *models.SourceLocation {
 	return ole.loc
 }
 
-func parseObjectLiteralExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func parseObjectLiteralExpression(toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	beginLoc := toks.CurrentSourceLocation()
 
 	tok, innerErr := toks.Pop()
@@ -60,11 +61,11 @@ func parseObjectLiteralExpression(toks *tokens.TokenStack) (exp models.Expressio
 	if tok.Type != tokens.LEFT_SQUIGGLY_BRACKET {
 		return nil, &models.InterpreterError{
 			Message:        "unexpected token; expected object literal expression",
-			SourceLocation: tok.SourceLocation,
+			SourceLocation: &tok.SourceLocation,
 		}
 	}
 
-	fields := make(map[string]models.Expression)
+	fields := make(map[string]expressions.Expression)
 	for {
 		tok, innerErr = toks.Pop()
 		if innerErr != nil {
@@ -95,7 +96,7 @@ func parseObjectLiteralExpression(toks *tokens.TokenStack) (exp models.Expressio
 				SourceLocation: beginLoc,
 				Underlying: &models.InterpreterError{
 					Message:        "to bind object field " + key,
-					SourceLocation: keyLoc,
+					SourceLocation: &keyLoc,
 					Underlying: &models.InterpreterError{
 						Message:        "expected colon",
 						SourceLocation: toks.CurrentSourceLocation(),
@@ -111,10 +112,10 @@ func parseObjectLiteralExpression(toks *tokens.TokenStack) (exp models.Expressio
 				SourceLocation: beginLoc,
 				Underlying: &models.InterpreterError{
 					Message:        "to bind object field " + key,
-					SourceLocation: keyLoc,
+					SourceLocation: &keyLoc,
 					Underlying: &models.InterpreterError{
 						Message:        "unexpected token; expected colon",
-						SourceLocation: tok.SourceLocation,
+						SourceLocation: &tok.SourceLocation,
 						Underlying:     innerErr,
 					},
 				},
@@ -129,10 +130,10 @@ func parseObjectLiteralExpression(toks *tokens.TokenStack) (exp models.Expressio
 				SourceLocation: beginLoc,
 				Underlying: &models.InterpreterError{
 					Message:        "to bind object field " + key,
-					SourceLocation: keyLoc,
+					SourceLocation: &keyLoc,
 					Underlying: &models.InterpreterError{
 						Message:        "after colon",
-						SourceLocation: colLoc,
+						SourceLocation: &colLoc,
 						Underlying: &models.InterpreterError{
 							Message:        "expected expression",
 							SourceLocation: toks.CurrentSourceLocation(),
@@ -143,7 +144,7 @@ func parseObjectLiteralExpression(toks *tokens.TokenStack) (exp models.Expressio
 			}
 		}
 
-		var exp1 models.Expression
+		var exp1 expressions.Expression
 		exp1, err = ParseExpression(toks)
 		if err != nil {
 			return nil, err
@@ -178,7 +179,7 @@ func parseObjectLiteralExpression(toks *tokens.TokenStack) (exp models.Expressio
 			SourceLocation: beginLoc,
 			Underlying: &models.InterpreterError{
 				Message:        "unexpected token; expected closing bracket",
-				SourceLocation: tok.SourceLocation,
+				SourceLocation: &tok.SourceLocation,
 			},
 		}
 	}

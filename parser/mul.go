@@ -4,14 +4,15 @@ import (
 	"fmt"
 
 	"github.com/brandonksides/grundfunken/models"
+	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
 	"github.com/brandonksides/grundfunken/tokens"
 )
 
 type MulExpression struct {
 	op     tokens.Token
-	first  models.Expression
-	second models.Expression
+	first  expressions.Expression
+	second expressions.Expression
 }
 
 func (me *MulExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
@@ -42,7 +43,7 @@ func (me *MulExpression) Type(tb types.TypeBindings) (types.Type, *models.Interp
 	return types.PrimitiveTypeInt, nil
 }
 
-func (me *MulExpression) Evaluate(bindings models.Bindings) (any, *models.InterpreterError) {
+func (me *MulExpression) Evaluate(bindings expressions.Bindings) (any, *models.InterpreterError) {
 	v1, err := me.first.Evaluate(bindings)
 	if err != nil {
 		return nil, err
@@ -77,16 +78,16 @@ func (me *MulExpression) Evaluate(bindings models.Bindings) (any, *models.Interp
 	default:
 		return nil, &models.InterpreterError{
 			Message:        "invalid operator",
-			SourceLocation: me.op.SourceLocation,
+			SourceLocation: &me.op.SourceLocation,
 		}
 	}
 }
 
-func (me *MulExpression) SourceLocation() models.SourceLocation {
+func (me *MulExpression) SourceLocation() *models.SourceLocation {
 	return me.first.SourceLocation()
 }
 
-func parseMulExpression(toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func parseMulExpression(toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	exp, err = parseNotExpression(toks)
 	if err != nil {
 		return nil, err
@@ -95,7 +96,7 @@ func parseMulExpression(toks *tokens.TokenStack) (exp models.Expression, err *mo
 	return foldMul(exp, toks)
 }
 
-func foldMul(first models.Expression, toks *tokens.TokenStack) (exp models.Expression, err *models.InterpreterError) {
+func foldMul(first expressions.Expression, toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
 	tok, ok := toks.Peek()
 	if !ok || tok.Type != tokens.STAR && tok.Type != tokens.SLASH && tok.Type != tokens.PERCENT {
 		return first, nil
@@ -103,7 +104,7 @@ func foldMul(first models.Expression, toks *tokens.TokenStack) (exp models.Expre
 	if first == nil {
 		return nil, &models.InterpreterError{
 			Message:        "expected expression",
-			SourceLocation: tok.SourceLocation,
+			SourceLocation: &tok.SourceLocation,
 		}
 	}
 
