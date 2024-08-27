@@ -18,6 +18,8 @@ func (le *LiteralExpression) Type(tb types.TypeBindings) (types.Type, *models.In
 		return types.PrimitiveTypeInt, nil
 	case string:
 		return types.PrimitiveTypeString, nil
+	case struct{}:
+		return types.PrimitiveTypeUnit, nil
 	default:
 		return types.PrimitiveTypeAny, nil
 	}

@@ -107,6 +107,11 @@ func parseAtomic(toks *tokens.TokenStack) (exp models.Expression, err *models.In
 				val: false,
 				loc: tok.SourceLocation,
 			}, nil
+		} else if tok.Value == "unit" {
+			exp, err = &LiteralExpression{
+				val: struct{}{},
+				loc: tok.SourceLocation,
+			}, nil
 		} else {
 			exp, err = &IdentifierExpression{
 				name: tok.Value,
