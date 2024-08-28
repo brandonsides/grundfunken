@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/brandonksides/grundfunken/models"
 	"github.com/brandonksides/grundfunken/models/expressions"
 	"github.com/brandonksides/grundfunken/models/types"
@@ -8,8 +10,10 @@ import (
 )
 
 type BindingExpression struct {
-	Identifier string
-	Expression expressions.Expression
+	Identifier      string
+	ExpectedType    types.Type
+	ExpectedTypeLoc *models.SourceLocation
+	Expression      expressions.Expression
 }
 
 type LetExpression struct {
@@ -38,7 +42,43 @@ func (le *LetExpression) Type(tb types.TypeBindings) (types.Type, *models.Interp
 			return nil, err
 		}
 
-		newTB[bindingExp.Identifier] = t
+		if bindingExp.ExpectedTypeLoc != nil {
+			isSuper, innerErr := types.IsSuperTo(bindingExp.ExpectedType, t)
+			if innerErr != nil {
+				return nil, &models.InterpreterError{
+					Message:        "in let clause",
+					SourceLocation: le.SourceLocation(),
+					Underlying: &models.InterpreterError{
+						Message:        "error checking type constraint",
+						SourceLocation: bindingExp.ExpectedTypeLoc,
+						Underlying: &models.InterpreterError{
+							Message:        "on expression",
+							SourceLocation: bindingExp.Expression.SourceLocation(),
+							Underlying:     innerErr,
+						},
+					},
+				}
+			}
+
+			if !isSuper {
+				return nil, &models.InterpreterError{
+					Message:        "in let clause",
+					SourceLocation: le.SourceLocation(),
+					Underlying: &models.InterpreterError{
+						Message:        "unmet type constraint",
+						SourceLocation: bindingExp.ExpectedTypeLoc,
+						Underlying: &models.InterpreterError{
+							Message:        "on expression",
+							SourceLocation: bindingExp.Expression.SourceLocation(),
+						},
+					},
+				}
+			}
+
+			newTB[bindingExp.Identifier] = bindingExp.ExpectedType
+		} else {
+			newTB[bindingExp.Identifier] = t
+		}
 	}
 
 	return le.InClause.Type(newTB)
@@ -118,12 +158,13 @@ func parseLetExpression(toks *tokens.TokenStack) (exp expressions.Expression, er
 		identifier := tok.Value
 		identifierDeclLoc := tok.SourceLocation
 
-		tok, innerErr = toks.Pop()
-		if innerErr != nil {
+		var ok bool
+		tok, ok = toks.Peek()
+		if !ok {
 			return nil, &models.InterpreterError{
 				Message: "in let clause",
 				Underlying: &models.InterpreterError{
-					Message:        "expected equal sign",
+					Message:        "expected equal sign or type constraint",
 					SourceLocation: toks.CurrentSourceLocation(),
 					Underlying:     innerErr,
 				},
@@ -141,7 +182,43 @@ func parseLetExpression(toks *tokens.TokenStack) (exp expressions.Expression, er
 			}
 		}
 
-		var ok bool
+		var typ types.Type = types.PrimitiveTypeAny
+		var typLoc *models.SourceLocation
+		if tok.Type != tokens.EQUAL {
+			loc := tok.SourceLocation
+			typLoc = &loc
+			typ, innerErr = parseType(toks)
+			if innerErr != nil {
+				return nil, &models.InterpreterError{
+					Message: "in let clause",
+					Underlying: &models.InterpreterError{
+						Message:        fmt.Sprintf("unexpected token \"%s\"; expected equal sign or type constraint", tok.Value),
+						SourceLocation: &tok.SourceLocation,
+					},
+					SourceLocation: beginLoc,
+				}
+			}
+		}
+
+		tok, innerErr = toks.Pop()
+		if innerErr != nil {
+			return nil, &models.InterpreterError{
+				Message:        "in let clause",
+				SourceLocation: beginLoc,
+				Underlying:     innerErr,
+			}
+		}
+		if tok.Type != tokens.EQUAL {
+			return nil, &models.InterpreterError{
+				Message:        "in let clause",
+				SourceLocation: beginLoc,
+				Underlying: &models.InterpreterError{
+					Message:        "expected equal sign",
+					SourceLocation: &tok.SourceLocation,
+				},
+			}
+		}
+
 		tok, ok = toks.Peek()
 		if !ok {
 			return nil, &models.InterpreterError{
@@ -165,8 +242,10 @@ func parseLetExpression(toks *tokens.TokenStack) (exp expressions.Expression, er
 		}
 
 		bindingExpressions = append(bindingExpressions, BindingExpression{
-			Identifier: identifier,
-			Expression: exp1,
+			Identifier:      identifier,
+			Expression:      exp1,
+			ExpectedType:    typ,
+			ExpectedTypeLoc: typLoc,
 		})
 
 		tok, innerErr = toks.Pop()

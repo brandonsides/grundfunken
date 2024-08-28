@@ -51,7 +51,7 @@ func (me *MatchExpression) Evaluate(bindings expressions.Bindings) (any, *models
 	}
 
 	typ, innerErr := types.TypeOf(onVal)
-	if err != nil {
+	if innerErr != nil {
 		return nil, &models.InterpreterError{
 			Message:        "cannot determine type of match expression",
 			SourceLocation: me.On.SourceLocation(),
@@ -172,7 +172,7 @@ func parseMatchExpression(toks *tokens.TokenStack) (exp expressions.Expression, 
 		}
 
 		exp, err := ParseExpression(toks)
-		if innerErr != nil {
+		if err != nil {
 			return nil, &models.InterpreterError{
 				Message:        "expected expression",
 				SourceLocation: &tok.SourceLocation,
