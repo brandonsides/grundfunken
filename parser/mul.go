@@ -110,14 +110,16 @@ func foldMul(first expressions.Expression, toks *tokens.TokenStack) (exp express
 
 	toks.Pop()
 
-	right, err := parseMulExpression(toks)
+	next, err := parseNotExpression(toks)
 	if err != nil {
-		return nil, err
+		return first, err
 	}
 
-	return &MulExpression{
-		first:  first,
-		op:     tok,
-		second: right,
-	}, nil
+	withNext := &MulExpression{
+		op: tok,
+		first: first,
+		second: next,
+	}
+
+	return foldMul(withNext, toks)
 }

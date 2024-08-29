@@ -100,13 +100,15 @@ func foldOr(first expressions.Expression, toks *tokens.TokenStack) (exp expressi
 	}
 	toks.Pop()
 
-	right, err := parseOrExpression(toks)
+	next, err := parseAndExpression(toks)
 	if err != nil {
-		return nil, err
+		return first, err
 	}
 
-	return &OrExpression{
-		Left:  first,
-		Right: right,
-	}, nil
+	withNext := &OrExpression{
+		Left: first,
+		Right: next,
+	}
+
+	return foldOr(withNext, toks)
 }

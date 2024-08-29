@@ -26,6 +26,16 @@ const (
 )
 
 func (ee *EqExpression) Type(tb types.TypeBindings) (types.Type, *models.InterpreterError) {
+	_, err := ee.Left.Type(tb)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = ee.Right.Type(tb)
+	if err != nil {
+		return nil, err
+	}
+
 	return types.PrimitiveTypeBool, nil
 }
 
@@ -75,16 +85,18 @@ func foldEq(first expressions.Expression, toks *tokens.TokenStack) (exp expressi
 		return first, nil
 	}
 
-	right, err := parseEqExpression(toks)
+	next, err := parseCmpExpression(toks)
 	if err != nil {
-		return nil, err
+		return first, err
 	}
 
-	return &EqExpression{
-		Left:  first,
+	withNext := &EqExpression{
 		Op:    *op,
-		Right: right,
-	}, nil
+		Left:  first,
+		Right: next,
+	}
+
+	return foldEq(withNext, toks)
 }
 
 func parseEqOp(toks *tokens.TokenStack) (op *EqOp, err *models.InterpreterError) {
