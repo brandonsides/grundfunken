@@ -171,16 +171,6 @@ func parseLetExpression(toks *tokens.TokenStack) (exp expressions.Expression, er
 				SourceLocation: beginLoc,
 			}
 		}
-		if tok.Type != tokens.EQUAL {
-			return nil, &models.InterpreterError{
-				Message: "in let clause",
-				Underlying: &models.InterpreterError{
-					Message:        "unexpected token; expected equal sign",
-					SourceLocation: &tok.SourceLocation,
-				},
-				SourceLocation: beginLoc,
-			}
-		}
 
 		var typ types.Type = types.PrimitiveTypeAny
 		var typLoc *models.SourceLocation

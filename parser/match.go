@@ -75,7 +75,7 @@ func (me *MatchExpression) Evaluate(bindings expressions.Bindings) (any, *models
 			}
 			newBindings[me.As] = onVal
 
-			return arm.Exp.Evaluate(bindings)
+			return arm.Exp.Evaluate(newBindings)
 		}
 	}
 

@@ -184,7 +184,7 @@ func parseFunction(toks *tokens.TokenStack) (exp expressions.Expression, err *mo
 			}
 		}
 
-		args = append(args, types.Arg{argName, argType})
+		args = append(args, types.Arg{Name: argName, Type: argType})
 
 		tok, innerErr := toks.Pop()
 		if innerErr != nil {
@@ -216,7 +216,7 @@ func parseFunction(toks *tokens.TokenStack) (exp expressions.Expression, err *mo
 	}
 
 	retType, innerErr := parseType(toks)
-	if err != nil {
+	if innerErr != nil {
 		return nil, &models.InterpreterError{
 			Message:        "expected return type",
 			SourceLocation: toks.CurrentSourceLocation(),

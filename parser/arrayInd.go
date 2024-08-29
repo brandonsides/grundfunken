@@ -68,7 +68,8 @@ func (aae *ArrayAccessExpression) Evaluate(bindings expressions.Bindings) (any, 
 }
 
 func (aae *ArrayAccessExpression) SourceLocation() *models.SourceLocation {
-	return aae.loc
+	ret := *aae.loc
+	return &ret
 }
 
 type ArraySliceExpression struct {
@@ -181,7 +182,8 @@ func (ase *ArraySliceExpression) Evaluate(bindings expressions.Bindings) (any, *
 }
 
 func (ase *ArraySliceExpression) SourceLocation() *models.SourceLocation {
-	return ase.loc
+	ret := *ase.loc
+	return &ret
 }
 
 func parseArrayIndex(arr expressions.Expression, toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {

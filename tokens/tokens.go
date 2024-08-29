@@ -106,7 +106,8 @@ type TokenStack struct {
 }
 
 func (stack *TokenStack) CurrentSourceLocation() *models.SourceLocation {
-	return &stack.curLoc
+	ret := stack.curLoc
+	return &ret
 }
 
 // Pop removes and returns the next token in the stack

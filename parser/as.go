@@ -20,6 +20,8 @@ func (ae *AsExpression) Type(tb types.TypeBindings) (types.Type, *models.Interpr
 		return nil, err
 	}
 
+	asLoc := ae.asLoc
+
 	canCast, innerErr := types.IsSuperTo(ulTyp, ae.typ)
 	if innerErr != nil {
 		return nil, &models.InterpreterError{
@@ -27,7 +29,7 @@ func (ae *AsExpression) Type(tb types.TypeBindings) (types.Type, *models.Interpr
 				Message:    fmt.Sprintf("failed to determine if %v is a supertype of %v", ulTyp, ae.typ),
 				Underlying: innerErr,
 			},
-			SourceLocation: &ae.asLoc,
+			SourceLocation: &asLoc,
 			Message:        "in \"as\" expression",
 		}
 	}
@@ -36,7 +38,7 @@ func (ae *AsExpression) Type(tb types.TypeBindings) (types.Type, *models.Interpr
 		return nil, &models.InterpreterError{
 			Message:        "in \"as\" expression",
 			Underlying:     fmt.Errorf("expression of type %v can never be of asserted type %v", ulTyp, ae.typ),
-			SourceLocation: &ae.asLoc,
+			SourceLocation: &asLoc,
 		}
 	}
 
@@ -54,7 +56,7 @@ func (ae *AsExpression) Evaluate(bindings expressions.Bindings) (any, *models.In
 		return nil, &models.InterpreterError{
 			Message: "in \"as\" expression",
 			Underlying: &models.InterpreterError{
-				Message:        fmt.Sprintf("failed to determine runtime type of value %v"),
+				Message:        fmt.Sprintf("failed to determine runtime type of value %v", ret),
 				Underlying:     innerErr,
 				SourceLocation: ae.SourceLocation(),
 			},

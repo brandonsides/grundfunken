@@ -156,7 +156,7 @@ func reportHelper(err error, lines map[string][]string) {
 
 func highlightLocation(lines map[string][]string, errStr string, loc models.SourceLocation) (string, bool) {
 	fileLines, ok := lines[loc.File]
-	if !ok || loc.LineNumber >= len(fileLines) {
+	if !ok || loc.LineNumber > len(fileLines) {
 		return errStr, false
 	}
 

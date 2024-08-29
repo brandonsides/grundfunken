@@ -58,7 +58,8 @@ func (ale *ArrayLiteralExpression) Evaluate(bindings expressions.Bindings) (any,
 }
 
 func (ale *ArrayLiteralExpression) SourceLocation() *models.SourceLocation {
-	return ale.loc
+	ret := *ale.loc
+	return &ret
 }
 
 func parseArrayLiteral(toks *tokens.TokenStack) (exp expressions.Expression, err *models.InterpreterError) {
